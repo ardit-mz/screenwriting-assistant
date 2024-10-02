@@ -1,7 +1,5 @@
-import {ButtonBase, Card, CardContent, CardHeader, Collapse} from "@mui/material";
+import {Card, CardContent, CardHeader, Collapse} from "@mui/material";
 import React, {useState} from "react";
-import {SwaColor} from "../../enum/SwaColor.ts";
-import Typography from "@mui/material/Typography";
 import Box from "@mui/material/Box";
 import IconButton from "@mui/material/IconButton";
 import {ExpandLess, ExpandMore} from "@mui/icons-material";
@@ -26,6 +24,8 @@ const ConsistencyCardPart: React.FC<ConsistencyCardPartProps> = ({title, text}) 
     const handleExpandClick = () => {
         setExpanded(!expanded);
     };
+
+    console.log("ConsistencyCardPart", title,text);
 
     return(<>
         <Card variant="outlined" sx={{mt:2, backgroundColor: 'white', border:'#F9FCD7'}}>
@@ -65,6 +65,9 @@ const ConsistencyCardPart: React.FC<ConsistencyCardPartProps> = ({title, text}) 
 
 
 const ConsistencyCard: React.FC<ConsistencyCardProps> = ({onClick, index, text}) => {
+
+    console.log("ConsistencyCard", onClick, index, text);
+
     return (
         <Box sx={{mt: 2, marginLeft: 4}}>
 

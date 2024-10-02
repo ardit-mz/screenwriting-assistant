@@ -13,7 +13,7 @@ import {useNavigate} from "react-router-dom";
 import IconButton from "@mui/material/IconButton";
 import DeleteForeverOutlinedIcon from "@mui/icons-material/DeleteForeverOutlined";
 import DeleteDialog from "../dialog/DeleteDialog.tsx";
-import {handleBlurBackground, selectBlur} from "../../features/theme/ThemeSlice.ts";
+import {handleBlurBackground} from "../../features/theme/ThemeSlice.ts";
 
 interface DrawerItemProps {
     id: string;
@@ -28,7 +28,7 @@ const DrawerItem: React.FC<DrawerItemProps> = ({ id, text, open, selected }) => 
     const navigate = useNavigate();
     const [hover, setHover] = useState(false);
     const [dialogOpen, setDialogOpen] = useState(false);
-    const blur = useSelector(selectBlur); // TODO check if necessary
+    // const blur = useSelector(selectBlur); // TODO check if necessary
 
     const handleClick = () => {
         dispatch(setCurrentProject(id));

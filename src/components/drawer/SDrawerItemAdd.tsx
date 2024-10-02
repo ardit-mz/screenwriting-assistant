@@ -5,7 +5,7 @@ import ListItem from '@mui/material/ListItem';
 import ListItemButton from '@mui/material/ListItemButton';
 import ListItemIcon from '@mui/material/ListItemIcon';
 import AddIcon from '@mui/icons-material/Add';
-import {useDispatch, useSelector} from "react-redux";
+import {useDispatch} from "react-redux";
 import {AppDispatch } from "../../store.ts";
 import {Project} from "../../types/Project";
 import {addProject, setCurrentProject } from "../../features/project/ProjectSlice.ts";
@@ -13,7 +13,7 @@ import {ProjectStage} from "../../enum/ProjectStage.ts";
 import { v4 as uuidv4 } from 'uuid';
 import ListItemText from "@mui/material/ListItemText";
 import AddDialog from "../dialog/AddDialog.tsx";
-import {handleBlurBackground, selectBlur} from "../../features/theme/ThemeSlice.ts";
+import {handleBlurBackground} from "../../features/theme/ThemeSlice.ts";
 
 
 interface DrawerItemProps {

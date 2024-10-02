@@ -66,7 +66,10 @@ const ContextMenu = React.forwardRef<HTMLDivElement, ContextMenuProps>(
                         }}>
                             {React.Children.map(children, (child) => {
                                 if (isContextMenuItem(child)) {
+
                                     return React.cloneElement(child, {
+                                        // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+                                        // @ts-expect-error
                                         onSelect: handleItemSelect,
                                     });
                                 }

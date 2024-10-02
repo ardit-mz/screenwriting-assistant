@@ -10,6 +10,8 @@ interface WhoWroteWhatCardProps {
 }
 
 const WhoWroteWhatCard: React.FC<WhoWroteWhatCardProps> = ({onClick, index, text}) => {
+    console.log("WhoWroteWhatCard", onClick, index, text);
+
     return (
         <Box sx={{mt: 8, marginLeft: 4}}>
             <Typography color={SwaColor.primaryLighter} variant={"h6"} sx={{mb:2}} textAlign={'right'}>Initial AI suggestion based on your ideas</Typography>

@@ -21,7 +21,8 @@ const SwaStepperButtonVersion: React.FC<SwaStepperButtonVersionProps> = ({active
         <SwaStepButton icon={isActive ? <FiberManualRecordIcon/> : <FiberManualRecordOutlinedIcon/>}
                        title={"Select this version"}
                        onClick={() => handleClick()}
-                       iconStyle={{height: 16, width: 16, color: '#d7d7d7', margin: 0, padding: 0}}
+                       style={{height: 16, width: 16, color: '#d7d7d7', margin: 0, padding: 0}
+        }
         />
     )
 }
