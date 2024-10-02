@@ -2,7 +2,7 @@
   "name": "screenwriting-assistant",
   "private": true,
   "version": "0.0.0",
-  "homepage": ".",
+  "homepage": "https://ardit-mz.github.io/screenwriting-assistant",
   "type": "module",
   "scripts": {
     "dev": "vite",
