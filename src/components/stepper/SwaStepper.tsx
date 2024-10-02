@@ -2,20 +2,14 @@
 
 import React from 'react';
 import {
-    Box,
-    Button,
-    createTheme,
     Step,
     StepButton,
-    StepContent,
     StepLabel,
     Stepper,
-    ThemeProvider
 } from '@mui/material';
 import {useDispatch } from "react-redux";
 import { updateProjectStage} from "../../features/project/ProjectSlice.ts";
 import {ProjectStage} from "../../enum/ProjectStage.ts";
-import Typography from "@mui/material/Typography";
 
 interface SwaStepperProps {
     steps: string[];
@@ -28,8 +22,9 @@ const SwaStepper: React.FC<SwaStepperProps> = ({
                                                    steps,
                                                    activeStep,
                                                    setActiveStep,
-                                                   completed,
-                                                   drawerOpen }) => {
+                                                   // completed,
+                                                   // drawerOpen
+}) => {
     const dispatch = useDispatch();
 
     function getStage (i: number) {

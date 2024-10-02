@@ -480,8 +480,8 @@ const SwaStep: React.FC<SwaStepProps> = ({id, index, steps, setSteps, onBlur, on
                        variant='outlined'
                        value={steps[index].versions?.[currentVersionIndex]?.text || steps[index].text || ''}
                        disabled={steps[index].locked ?? steps[index].locked}
-                       onBlur={() => {
-                           onBlur()
+                       onBlur={(e) => {
+                           if (onBlur) onBlur(e);
                            setActive(false)
                        }}
                        onFocus={handleFocus}

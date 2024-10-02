@@ -1,11 +1,9 @@
 import Box from "@mui/material/Box";
 import PaginationVersions from "../version/PaginationVersions.tsx";
 import Typography from "@mui/material/Typography";
-import {Button, TextField} from "@mui/material";
+import { TextField} from "@mui/material";
 import {SwaColor} from "../../enum/SwaColor.ts";
 import React, {useEffect, useState} from "react";
-import {useSelector} from "react-redux";
-import {selectCurrentProject} from "../../features/project/ProjectSlice.ts";
 
 interface ScriptTextFieldProps {
     text: string;
@@ -31,6 +29,8 @@ const ScriptTextField: React.FC<ScriptTextFieldProps> = ({text, versions}) => {
         setCharCount(newText.length);
         setWordCount(newText.trim().split(/\s+/).filter(Boolean).length);
     };
+
+    console.log("ScriptTextField currentText", currentText);
 
     return (
         <Box sx={{ width: '100%', overflowY: 'auto', flex: 3, marginRight: 2, '&::-webkit-scrollbar': { display: 'none' } }}>

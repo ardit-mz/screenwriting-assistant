@@ -84,10 +84,10 @@ const Export = () => {
     };
 
 
-    const handleShare = () => {
-        // TODO handle export share
-        // console.log("Export share")
-    }
+    // const handleShare = () => {
+    //     // TODO handle export share
+    //     // console.log("Export share")
+    // }
 
     // console.log("Export project", project)
 
