@@ -1,71 +1,142 @@
 import Box from "@mui/material/Box";
 import PaginationVersions from "../version/PaginationVersions.tsx";
 import Typography from "@mui/material/Typography";
-import { TextField} from "@mui/material";
+import {TextField} from "@mui/material";
 import {SwaColor} from "../../enum/SwaColor.ts";
 import React, {useEffect, useState} from "react";
+import {Project} from "../../types/Project";
+import {selectCurrentProject, updateProject} from "../../features/project/ProjectSlice.ts";
+import {useDispatch, useSelector} from "react-redux";
+import {AppDispatch} from "../../store.ts";
+import {Script} from "../../types/Script";
 
 interface ScriptTextFieldProps {
     text: string;
     versions: { id: string, text: string }[];
+    style?: React.CSSProperties;
+    currentVersionIndex: number;
+    setCurrentVersionIndex: React.Dispatch<React.SetStateAction<number>>;
 }
 
-const ScriptTextField: React.FC<ScriptTextFieldProps> = ({text, versions}) => {
-    const [currentText, setCurrentText] = useState<string>(text);
-    const [charCount, setCharCount] = useState<number>(0);
-    const [wordCount, setWordCount] = useState<number>(0);
-    const [currentVersionIndex, setCurrentVersionIndex] = useState<number>(0)
 
-    useEffect(() => {
-        if (text) {
-            setCharCount(text.length);
-            setWordCount(text.trim().split(/\s+/).filter(Boolean).length);
+const ScriptTextField = React.forwardRef<HTMLDivElement, ScriptTextFieldProps>(
+    ({text, versions, style, currentVersionIndex, setCurrentVersionIndex}, ref) => {
+        const dispatch = useDispatch<AppDispatch>();
+        const project = useSelector(selectCurrentProject);
+
+        const [currentText, setCurrentText] = useState<string>(text);
+        const [charCount, setCharCount] = useState<number>(0);
+        const [wordCount, setWordCount] = useState<number>(0);
+
+        useEffect(() => {
+            if (text) {
+                setCharCount(text.length);
+                setWordCount(text.trim().split(/\s+/).filter(Boolean).length);
+            }
+        }, []);
+
+        useEffect(() => {
+            if (versions[currentVersionIndex]) {
+                const newText = versions[currentVersionIndex].text;
+                setCurrentText(newText);
+                setCharCount(newText.length);
+                setWordCount(newText.trim().split(/\s+/).filter(Boolean).length);
+            }
+        }, [currentVersionIndex, versions]);
+
+        const handleTextChange = (event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+            const newText = event.target.value;
+            setCurrentText(newText);
+            setCharCount(newText.length);
+            setWordCount(newText.trim().split(/\s+/).filter(Boolean).length);
+        };
+
+        const updateScript = () => {
+            if (!project || !project.script) return;
+
+            const updatedScript: Script = {
+                ...project.script,
+                screenplay: currentText,
+                versions: project.script.versions.map((version) =>
+                    version.id === project?.script?.versions[currentVersionIndex].id
+                        ? { ...version, text: currentText }
+                        : version
+                ),
+            }
+
+            const updatedProject: Project = {
+                ...project,
+                script: updatedScript,
+            };
+
+            dispatch(updateProject(updatedProject))
         }
-    }, []);
 
-    const handleTextChange = (event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-        const newText = event.target.value;
-        setCurrentText(newText);
-        setCharCount(newText.length);
-        setWordCount(newText.trim().split(/\s+/).filter(Boolean).length);
-    };
+        return (
+            <Box sx={{
+                width: '100%',
+                overflowY: 'auto',
+                flex: 3,
+                marginRight: 2,
+                // '&::-webkit-scrollbar': {display: 'none'},
+                ...style
+            }}>
+                <Box
+                    sx={{display: 'flex', flexDirection: 'row', justifyContent: versions.length > 1 ? "space-between" : "end", alignItems: "center"}}>
+                    {versions && versions.length > 1 &&
+                        <PaginationVersions totalPages={versions.length}
+                                            onChange={(newPageIndex) => setCurrentVersionIndex(newPageIndex - 1)}
+                                            currentVersion={currentVersionIndex + 1}/>
+                    }
+                    <Typography sx={{mt: '4px'}} variant="body2" color="textSecondary" align="right">
+                        {`Words: ${wordCount} | Characters: ${charCount}`}
+                    </Typography>
+                </Box>
 
-    console.log("ScriptTextField currentText", currentText);
-
-    return (
-        <Box sx={{ width: '100%', overflowY: 'auto', flex: 3, marginRight: 2, '&::-webkit-scrollbar': { display: 'none' } }}>
-            <Box sx={{display: 'flex', flexDirection: 'row', justifyContent: "space-between", alignItems: "center"}}>
-                {versions && versions.length > 0 &&
-                    <PaginationVersions totalPages={versions.length}
-                                        onChange={(newPageIndex) => setCurrentVersionIndex(newPageIndex - 1)}
-                                        currentVersion={currentVersionIndex}/>
-                }
-                <Typography sx={{mt: '4px'}} variant="body2" color="textSecondary" align="right">
-                    {`Words: ${wordCount} | Characters: ${charCount}`}
-                </Typography>
+                <Box sx={{
+                    height: "96%",
+                    overflowY: 'auto',
+                    '&::-webkit-scrollbar': { display: 'none' }
+                }}>
+                    <TextField ref={ref}
+                           fullWidth
+                           multiline
+                           margin={"normal"}
+                           variant={"outlined"}
+                           value={currentText}
+                           onChange={handleTextChange}
+                           onBlur={updateScript}
+                           style={{
+                               backgroundColor: SwaColor.grey,
+                               height: '100%',
+                               fontFamily: 'Courier, monospace',
+                               whiteSpace: 'pre-wrap',
+                               fontSize: 20,
+                               textAlign: 'left',
+                               border: "undefined",
+                               width: '100%',
+                               minWidth: 550,
+                           }}
+                           sx={{
+                               mt: 0,
+                               mb: 0,
+                               '& .MuiOutlinedInput-root': {
+                                   '& fieldset': {
+                                       border: 'none',
+                                   },
+                                   '&:hover fieldset': {
+                                       border: 'none',
+                                   },
+                                   '&.Mui-focused fieldset': {
+                                       border: 'none',
+                                   }
+                               },
+                           }}
+                           inputProps={{style: {color: SwaColor.primaryLighter}}}/>
+                </Box>
             </Box>
-
-            <TextField fullWidth
-                       multiline
-                       margin={"normal"}
-                       variant={"outlined"}
-                       defaultValue={text}
-                       onChange={handleTextChange}
-                       style={{
-                           backgroundColor: SwaColor.grey,
-                           height: '100%',
-                           fontFamily: 'Courier, monospace',
-                           whiteSpace: 'pre-wrap',
-                           fontSize: 20,
-                           textAlign: 'left',
-                           border: "undefined",
-                           width: '100%',
-                           minWidth: 550,
-                       }}
-                       sx={{mt:0, mb:0}}
-                       inputProps={{style: { color: SwaColor.primaryLighter }}}/>
-        </Box>
-    )
-}
+        )
+    }
+)
 
 export default ScriptTextField;

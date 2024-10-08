@@ -15,7 +15,7 @@ import Export from "../../views/Export.tsx";
 import Refinement from "../../views/Refinement.tsx";
 import ViewSidebarOutlinedIcon from '@mui/icons-material/ViewSidebarOutlined';
 import ViewSidebarIcon from '@mui/icons-material/ViewSidebar';
-import {Route, Routes, useNavigate} from "react-router-dom";
+import {Navigate, Route, Routes, useNavigate} from "react-router-dom";
 import Structure from "../../views/Structure.tsx";
 import {ScreenNames} from "../../enum/ScreenNames.ts";
 import {useSelector} from "react-redux";
@@ -425,6 +425,7 @@ const MiniDrawer: React.FC = () => {
                         <Route path={ScreenNames.STRUCTURE} element={<Structure/>}/>
                         <Route path={ScreenNames.REFINEMENT} element={<Refinement/>}/>
                         <Route path={ScreenNames.EXPORT} element={<Export/>}/>
+                        <Route path="*" element={<Navigate to={ScreenNames.BRAINSTORMING} />} />
                     </Routes>
                 </Box>
 

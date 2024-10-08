@@ -9,7 +9,7 @@ interface FillingButtonProps {
 
 const FillingButton: React.FC<FillingButtonProps> = ({ brainstormingText, onClick }) => {
     const MAX_LENGTH = 100;
-    const TITLE = "Go to the next step";
+    const TITLE = "I am happy so far";
     // const TITLE = "I am happy with the ideas so far";
     const percentageFilled = brainstormingText.length > 0
         ? Math.min((brainstormingText.length / MAX_LENGTH) * 100, 100)

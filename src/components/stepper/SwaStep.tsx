@@ -1,5 +1,5 @@
 import React, {useState} from "react";
-import {Button, Skeleton, Step, StepLabel, TextField} from "@mui/material";
+import {Button, Skeleton, Step, StepLabel, TextField, Tooltip} from "@mui/material";
 import {CSS} from '@dnd-kit/utilities';
 import SwaStepIcon from "../../icons/SwaStepIcon.tsx";
 import SwaStepButton from "./SwaStepButton.tsx";
@@ -30,6 +30,8 @@ import SwaStepSkeleton from "../skeleton/SwaStepSkeleton.tsx";
 import ImpulseSkeleton from "../skeleton/ImpulseSkeleton.tsx";
 import {useSortable} from "@dnd-kit/sortable";
 import {selectApiKey} from "../../features/model/ModelSlice.ts";
+import DragIndicatorIcon from '@mui/icons-material/DragIndicator';
+import IconButton from "@mui/material/IconButton";
 
 interface SwaStepProps {
     id: string;
@@ -440,8 +442,7 @@ const SwaStep: React.FC<SwaStepProps> = ({id, index, steps, setSteps, onBlur, on
                                                ...style
                                            }}
                                            ref={setNodeRef}
-                                           {...attributes}
-                                           {...listeners} >
+                                           {...attributes} >
         <div style={{display: 'flex', flexDirection: 'column', minWidth: 300, maxWidth: 300}}>
             <div style={{display: 'flex', flexDirection: 'row', justifyContent: 'space-between'}}>
                 <div style={{display: 'flex'}}>
@@ -487,9 +488,11 @@ const SwaStep: React.FC<SwaStepProps> = ({id, index, steps, setSteps, onBlur, on
                        onFocus={handleFocus}
                        InputProps={{style: {color: focused ? '#777777' : '#3E3E3E'}}}
                        onChange={(e) => handleStepTextChange(e.target.value)}
-                       style={{minWidth: 300}}
+                       style={{minWidth: 300, marginBottom: 0}}
             />
-
+            <Tooltip title={"Drag and drop the story beat"}>
+                <IconButton  {...listeners}> <DragIndicatorIcon style={{ transform: "rotate(90deg)"}} /> </IconButton>
+            </Tooltip>
             {
                 steps[index]?.impulseStage === ImpulseStage.LOADING
                     ? <> {Array(3).fill(null).map(() => (<ImpulseSkeleton key={uuidv4()}/>))}

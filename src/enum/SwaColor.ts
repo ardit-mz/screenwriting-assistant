@@ -21,4 +21,6 @@ export enum SwaColor {
     orangeLight =  '#FFE9D8',
     redLight =  '#FFE1E1',
     violetLight =  '#F4E5FC',
+    yellowLight =  '#F9FCD7',
+    greenLighter =  '#D1F5EA',
 }

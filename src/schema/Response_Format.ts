@@ -70,7 +70,7 @@ export const QUESTIONS_SCHEMA = z.object({
     ).describe("Array of questions that are raised by the story beat but not answered in the whole story"),
 })
 
-export const CRITIQUE_SCHEMA = (part: string) =>  z.object({
+export const CRITIQUE_SCHEMA = (part: string) => z.object({
     strength: z.string().describe(`a short description of the strengths of the ${part}`),
     areas_for_improvement: z.string().describe(`a short description of the areas for improvement of the ${part}`),
     summary_for_improvement: z.string().describe(`a very short summary for improvement of the ${part}`),
@@ -84,4 +84,15 @@ export const ANALYSIS_SCHEMA = (part: string) => z.object({
 }).describe(`an object used to analyse the provided ${part} and its inciting incident, character development, thematic implications, and narrative foreshadowing`)
 
 
-/* Export */
+/* Completion */
+
+export const CONSISTENCY_SCHEMA = z.object({
+    inconsistencies: z.array(
+        z.object({
+            text: z.string().describe('sentence or paragraph that is inconsistent in the context of the screenplay'),
+            issue: z.string().describe('The issue with the sentence or paragraph, so why it is inconsistent in the context of the screenplay'),
+            suggestion: z.string().describe('A very short suggestion on how the sentence or paragraph can be made more consistent in the context of the screenplay'),
+            revisedText: z.string().describe('a revised or corrected version of the sentence or paragraph'),
+        }).describe(`an object used to check the consistency of a sentence or paragraph in the screenplay draft, with the goal of finding out the issue with the sentence or paragraph, suggestions on how it can be solved, and a revised and corrected version of the sentence or paragraph`)
+    ).describe('An array of objects describing sentences or paragraphs that are inconsistent in the screenplay draft, and how they can be corrected')
+}).describe('An object containing an array of objects describing sentences or paragraphs that are inconsistent in the screenplay draft, and how they can be corrected')
