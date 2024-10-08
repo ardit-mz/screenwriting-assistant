@@ -7,8 +7,8 @@ import {
     StepLabel,
     Stepper,
 } from '@mui/material';
-import {useDispatch } from "react-redux";
-import { updateProjectStage} from "../../features/project/ProjectSlice.ts";
+import {useDispatch, useSelector} from "react-redux";
+import {selectCurrentProject, updateProjectStage} from "../../features/project/ProjectSlice.ts";
 import {ProjectStage} from "../../enum/ProjectStage.ts";
 
 interface SwaStepperProps {
@@ -26,6 +26,7 @@ const SwaStepper: React.FC<SwaStepperProps> = ({
                                                    // drawerOpen
 }) => {
     const dispatch = useDispatch();
+    const project = useSelector(selectCurrentProject)
 
     function getStage (i: number) {
         switch (i) {
@@ -38,6 +39,9 @@ const SwaStepper: React.FC<SwaStepperProps> = ({
     }
 
     const handleStep = (step: number) => () => {
+        if (step > 0 && !!project && project.storyBeats.length === 0) {
+            return
+        }
         dispatch(updateProjectStage(getStage(step)))
         setActiveStep(step);
     };

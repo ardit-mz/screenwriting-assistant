@@ -10,11 +10,12 @@ import {
     STORYBEATS_TREATMENT,
     SUGGESTIONS,
     UNIVERSAL_EMOTION,
-    UNIVERSAL_QUESTION
+    UNIVERSAL_QUESTION,
+    CONSISTENCY_CHECK
 } from "../constants/SystemMessage.ts";
 import {getOpenAIRes} from "../services/openaiService.ts";
 import {
-    ANALYSIS_SCHEMA,
+    ANALYSIS_SCHEMA, CONSISTENCY_SCHEMA,
     CRITIQUE_SCHEMA,
     IMPULSES_SCHEMA,
     QUESTIONS_SCHEMA,
@@ -129,5 +130,12 @@ export function storyBeatsToScreenplay(prompt: string, apiKey: string) {
 export function storyBeatsToTreatment(prompt: string, apiKey: string) {
     const res = getOpenAIRes(prompt, STORYBEATS_TREATMENT, undefined, apiKey)
     console.log("openaiService storyBeatsToTreatment", res);
+    return res;
+}
+
+export function checkScriptConsistency(prompt: string, apiKey: string) {
+    const res_format = zodResponseFormat(CONSISTENCY_SCHEMA, "consistency")
+    const res = getOpenAIRes(prompt, CONSISTENCY_CHECK, res_format, apiKey)
+    console.log("openaiService checkScriptConsistency", res);
     return res;
 }

@@ -22,7 +22,7 @@ const ContextMenuItem: React.FC<ContextMenuItemProps> = ({
                                                              active,
                                                              showDescription,
                                                              description,
-                                                             backgroundColor
+                                                             backgroundColor,
                                                          }) => {
 
     const [isHovered, setIsHovered] = useState(false);
@@ -103,7 +103,8 @@ const ContextMenuItem: React.FC<ContextMenuItemProps> = ({
                 <ListItemText> {name} </ListItemText>
                 {
                     showDescription && (isHovered || isClicked) &&
-                    <ListItemText  sx={{ marginLeft: 3, color: '#888', flexGrow: 0 }} primaryTypographyProps={{fontSize: '15px'}}>
+                    <ListItemText sx={{marginLeft: 3, color: '#888', flexGrow: 0}}
+                                  primaryTypographyProps={{fontSize: '15px'}}>
                         {description}
                     </ListItemText>
                 }

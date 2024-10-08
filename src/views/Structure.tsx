@@ -93,10 +93,10 @@ const Structure = () => {
             return;
         }
 
-        if (!!project && project.projectStage === ProjectStage.STRUCTURE) {
+        if (!!project && project.projectStage === ProjectStage.STRUCTURE && !!project.brainstorm) {
             handleStoryBeats();
         }
-    }, []);
+    }, [project?.brainstorm]);
 
     useEffect(() => {
         if (project?.storyBeats) {

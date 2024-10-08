@@ -3,7 +3,7 @@ import React from "react";
 
 interface ImpulseSkeletonProps {
     style?: React.CSSProperties;
-    width?: string;
+    width?: string | number;
 }
 
 const ImpulseSkeleton: React.FC<ImpulseSkeletonProps> = ({style, width}) => {

@@ -31,7 +31,7 @@ const ButtonsHeader = () => {
     const rewriteButtonTitle = locked ? "Rewrite unlocked" : "Rewrite all";
     const resetLocksTooltipTitle = 'Unlock all story beats';
     const resetLockButtonTitle = 'Unlock all';
-    const nextTooltipTitle = project ? ('Go to ' + (project.projectStage === ProjectStage.STRUCTURE ? 'refinement' : 'export')) : '';
+    const nextTooltipTitle = project ? ('Go to ' + (project.projectStage === ProjectStage.STRUCTURE ? 'refinement' : 'completion')) : '';
     const nextButtonTitle = 'Next';
     const suggestionTitle = 'Get suggestions';
     const suggestionTooltip = 'Get suggestions based on what you have written';
