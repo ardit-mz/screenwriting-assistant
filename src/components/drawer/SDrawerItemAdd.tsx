@@ -1,5 +1,3 @@
-// components/SDrawerItem.tsx
-
 import React, {useState} from 'react';
 import ListItem from '@mui/material/ListItem';
 import ListItemButton from '@mui/material/ListItemButton';
@@ -42,6 +40,7 @@ const DrawerItem: React.FC<DrawerItemProps> = ({ open }) => {
             name: projectName,
             projectStage: ProjectStage.BRAINSTORMING,
             brainstorm: '',
+            brainstormChanged: false,
             script: undefined,
             storyBeats: [],
         };

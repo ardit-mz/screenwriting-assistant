@@ -55,7 +55,7 @@ const ProjectSlice = createSlice({
         updateBrainstorming(state, action: PayloadAction<{ projectId: string; text: string }>) {
             const project = state.projects.find(p => p.id === action.payload.projectId);
             if (project) {
-                project.brainstorm = (project?.brainstorm ?? '') + action.payload.text;
+                project.brainstorm = action.payload.text;
             }
         },
         addStoryBeat(state, action: PayloadAction<{ projectId: string; storyBeat: StoryBeat }>) {
@@ -106,18 +106,18 @@ const ProjectSlice = createSlice({
             }
         },
         updateSuggestions(state, action: PayloadAction<{projectId: string, suggestions: string[]}>) {
-            const suggestions = state.projects.find(p => p.id === action.payload.projectId);
-            if (suggestions) {
-                suggestions.suggestions = action.payload.suggestions;
+            const project = state.projects.find(p => p.id === action.payload.projectId);
+            if (project) {
+                project.suggestions = action.payload.suggestions;
             }
         }
     },
 });
 
 export const selectProjects = (state: RootState) => state.projects.projects;
-export const selectCurrentProject = (state: RootState) =>
-    state.projects.projects.find(project => project.id === state.projects.currentProjectId) || null;
+export const selectCurrentProject = (state: RootState) => state.projects.projects.find(project => project.id === state.projects.currentProjectId) || null;
 export const selectLoading = (state: RootState) => state.projects.loading;
+
 export const {
     addProject,
     updateProject,
@@ -134,4 +134,5 @@ export const {
     updateStoryBeatImpulses,
     updateSuggestions
 } = ProjectSlice.actions;
+
 export default ProjectSlice.reducer;

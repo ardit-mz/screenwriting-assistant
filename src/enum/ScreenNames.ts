@@ -3,4 +3,5 @@ export enum ScreenNames {
     STRUCTURE = "/structure",
     REFINEMENT = "/refinement",
     EXPORT = "/export",
+    ABOUT = "/about"
 }

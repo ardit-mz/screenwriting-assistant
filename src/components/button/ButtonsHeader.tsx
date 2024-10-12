@@ -1,24 +1,25 @@
-// ButtonsHeader.tsx
-
 import Box from "@mui/material/Box";
 import {Button, Tooltip} from "@mui/material";
 import {useDispatch, useSelector} from "react-redux";
 import {
     resetStoryBeatLocks,
     selectCurrentProject,
-    setLoading,
+    setLoading, updateProject,
     updateProjectStage,
-    updateStoryBeats, updateSuggestions
 } from "../../features/project/ProjectSlice.ts";
 import {ProjectStage} from "../../enum/ProjectStage.ts";
 import {ScreenNames} from "../../enum/ScreenNames.ts";
 import {AppDispatch} from "../../store.ts";
 import {useNavigate} from "react-router-dom";
-import {getSuggestions, regenerateStoryBeats} from "../../api/openaiAPI.ts";
+import {regenerateStoryBeats} from "../../api/openaiAPI.ts";
 import RewriteAllButton from "./RewriteAllButton.tsx";
 import {selectApiKey} from "../../features/model/ModelSlice.ts";
-import UploadWriting from "../fileUpload/UploadWriting.tsx";
-import {setOpenRight} from "../../features/drawer/DrawerSlice.ts";
+// import UploadWriting from "../fileUpload/UploadWriting.tsx";
+import {StoryBeat} from "../../types/StoryBeat";
+import {v4 as uuidv4} from "uuid";
+import {Project} from "../../types/Project";
+import {MenuCardStage} from "../../enum/MenuCardStage.ts";
+import {showDialogError} from "../../features/drawer/DrawerSlice.ts";
 
 const ButtonsHeader = () => {
     const project = useSelector(selectCurrentProject) ?? null;
@@ -33,58 +34,60 @@ const ButtonsHeader = () => {
     const resetLockButtonTitle = 'Unlock all';
     const nextTooltipTitle = project ? ('Go to ' + (project.projectStage === ProjectStage.STRUCTURE ? 'refinement' : 'completion')) : '';
     const nextButtonTitle = 'Next';
-    const suggestionTitle = 'Get suggestions';
-    const suggestionTooltip = 'Get suggestions based on what you have written';
-
-    const brainstormingSuggestions = async () => {
-        if (!project) return;
-        dispatch(setOpenRight(true));
-
-        if (!!project.suggestions && project.suggestions.length > 0) {
-            dispatch(updateSuggestions({
-                projectId: project?.id,
-                suggestions: []
-            }))
-        }
-
-        try {
-            const brainstormingPrompt = "My Brainstorming so far is:\\n" + project?.brainstorm;
-            const suggestionsRes = await getSuggestions(brainstormingPrompt, apiKey);
-
-            // @ts-expect-error it has this format
-            const suggestionsParsed = suggestionsRes?.choices[0]?.message?.parsed?.suggestions ?? "";
-
-            dispatch(updateSuggestions({
-                projectId: project?.id,
-                suggestions: suggestionsParsed
-            }))
-
-        } catch (error) {
-            console.error("Brainstorming Error fetching suggestions from brainstorming:", error);
-        }
-    }
 
     const rewriteStoryBeats = async () => {
         if (!project) return;
 
-        const brainstormingPrompt = `"My brainstorm for this story is:\\n\\${project.brainstorm}\\n`;
-        const prompt = `${brainstormingPrompt} My story structure so far is: ${project.storyBeats.filter(s => s.locked).join("\n")}`
-        const newStoryBeatsResponse = await regenerateStoryBeats(prompt, apiKey);
+        const lockedStoryBeats = project?.storyBeats
+            .filter(storyBeat => storyBeat.locked)
+            .map(storyBeat => storyBeat.text)
+            .join("\n")
+
+        const userMsg = `
+        Here is the brainstorming session text to base the story beats on:
+        ${project.brainstorm}
+        ${project?.uploadedText ? `\nAlso here are some more ideas for reference for style based on my other writing:\\n\\${project.uploadedText}\\n` : ''}
+        The total number of story beats is ${project.storyBeats.length}.
+        ${project.storyBeats.some(s => s.locked) ? "The following story beats are locked and should not be rewritten:\n" + lockedStoryBeats : 'There are no locked story beats.'}
+        
+        Please rewrite the story beats according to these guidelines while keeping the locked ones intact.
+        `
+
+        const newStoryBeatsResponse = await regenerateStoryBeats(userMsg, apiKey);
+
+        if (newStoryBeatsResponse === 401) {
+            dispatch(showDialogError(true));
+        } else {dispatch(showDialogError(false));}
 
         if (newStoryBeatsResponse) {
             // @ts-expect-error It has this format
             const newStoryBeats = newStoryBeatsResponse?.choices[0]?.message?.parsed?.story_beats;
-            console.log("newStoryBeats", newStoryBeats)
+            const actsList: StoryBeat[] = []
 
-            return project.storyBeats.map((beat) => {
-                if (!beat.locked) {
-                    return {
-                        ...beat,
-                        text: newStoryBeats.shift() || beat.text,
-                    };
+            newStoryBeats?.forEach((act: string, index: number) => {
+                const id = uuidv4()
+                const newStoryBeat: StoryBeat = {
+                    id: id,
+                    text: act,
+                    locked: false,
+                    index: index,
+                    impulses: [],
+                    impulseStage: MenuCardStage.UNINITIALIZED,
+                    questions: undefined,
+                    questionStage: MenuCardStage.UNINITIALIZED,
+                    emotion: undefined,
+                    emotionStage: MenuCardStage.UNINITIALIZED,
+                    versions: [{id: id, text: act}],
+                    project: project,
+                    analysis: undefined,
+                    analysisStage: MenuCardStage.UNINITIALIZED,
+                    critique: undefined,
+                    critiqueStage: MenuCardStage.UNINITIALIZED,
                 }
-                return beat;
-            });
+                actsList.push(newStoryBeat);
+            })
+
+            return actsList
         }
     }
 
@@ -92,9 +95,14 @@ const ButtonsHeader = () => {
         if (!project) return;
         dispatch(setLoading(true));
 
-        const updatedStoryBeats = await rewriteStoryBeats() ?? [];
-        dispatch(updateStoryBeats({projectId: project.id, storyBeats: updatedStoryBeats}));
+        const actList = await rewriteStoryBeats() ?? [];
+        const updatedProject: Project = {
+            ...project,
+            storyBeats: actList,
+            brainstormChanged: false,
+        };
 
+        dispatch(updateProject(updatedProject))
         dispatch(setLoading(false));
     }
 
@@ -119,27 +127,17 @@ const ButtonsHeader = () => {
     }
 
     return (<>
-        {
-            !!project && project.projectStage === ProjectStage.BRAINSTORMING && !!apiKey &&
-            <Box sx={{
-                display: 'flex',
-                flexDirection: 'row',
-                justifyContent: 'start',
-                padding: '0px 24px'
-            }}>
-                <UploadWriting/>
-
-                <Tooltip title={suggestionTooltip} placement={'bottom'} arrow>
-                    <Button onClick={brainstormingSuggestions}
-                            variant="outlined"
-                            style={{marginLeft: 10}}
-                            color={'primary'}>
-                        {suggestionTitle}
-                    </Button>
-                </Tooltip>
-
-            </Box>
-        }
+        {/*{ // removed for conference */}
+        {/*    !!project && project.projectStage === ProjectStage.BRAINSTORMING && !!apiKey &&*/}
+        {/*    <Box sx={{*/}
+        {/*        display: 'flex',*/}
+        {/*        flexDirection: 'row',*/}
+        {/*        justifyContent: 'start',*/}
+        {/*        padding: '0px 24px'*/}
+        {/*    }}>*/}
+        {/*        <UploadWriting/>*/}
+        {/*    </Box>*/}
+        {/*}*/}
 
         {
             !!project && (project.projectStage === ProjectStage.STRUCTURE || project.projectStage === ProjectStage.REFINEMENT || project.projectStage === ProjectStage.COMPLETION) &&

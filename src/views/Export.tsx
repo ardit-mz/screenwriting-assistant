@@ -6,9 +6,10 @@ import {AppDispatch} from "../store.ts";
 import {selectCurrentProject, updateProject} from "../features/project/ProjectSlice.ts";
 import {useEffect, useRef, useState} from "react";
 import {
+    checkScriptConsistency,
     critiqueSentence,
     extendSentence,
-    rephraseSentence,
+    rephraseSentence, runAnalysis, runCritique,
     storyBeatsToScreenplay,
     storyBeatsToTreatment
 } from "../api/openaiAPI.ts";
@@ -23,6 +24,11 @@ import CompletionMenu from "../components/menu/CompletionMenu.tsx";
 import {MenuItem} from "../enum/MenuItem.ts";
 import FloatingContextMenu from "../components/menu/FloatingContextMenu.tsx";
 import {v4 as uuidv4} from "uuid";
+import {debounce} from "../helper/DebounceHelper.ts";
+import {showDialogError} from "../features/drawer/DrawerSlice.ts";
+import {ParsedChatCompletion} from "openai/resources/beta/chat/completions";
+import {Script} from "../types/Script";
+import {MenuCardStage} from "../enum/MenuCardStage.ts";
 
 const Export = () => {
     const dispatch = useDispatch<AppDispatch>();
@@ -31,6 +37,7 @@ const Export = () => {
     const contextMenuRef = useRef<HTMLDivElement>(null);
     const textFieldContainerRef = useRef<HTMLDivElement>(null);
 
+    const [script, setScript] = useState(project?.script);
     const [showTreatment, setShowTreatment] = useState<boolean>(false);
     const [loading, setLoading] = useState<boolean>(false);
     const [menuSecondTitle, setMenuSecondTitle] = useState<string>('');
@@ -44,19 +51,17 @@ const Export = () => {
     const [currentVersionIndex, setCurrentVersionIndex] = useState<number>(0);
 
     useEffect(() => {
-        if (!project?.script || !project?.script?.screenplay) {
-            fetchScreenplay().then(res => {
-                    console.log("Export fetchScreenplay res", res)
-                }
-            ).catch((e) => console.log("Export fetchScreenplay err", e));
-        }
-    }, []);
-
-    useEffect(() => {
         if (contextMenuRef.current) {
             setMenuWidth(contextMenuRef.current.offsetWidth);
         }
     }, [contextMenuRef.current]);
+
+    useEffect(() => {
+        if (project?.script) {
+            setScript(project.script);
+            setCurrentText(script?.versions[currentVersionIndex]?.text ?? '')
+        }
+    }, [project?.script, currentVersionIndex]);
 
     const fetchScreenplay = async (isRewrite: boolean = false) => {
         if (!project || !project.storyBeats) return;
@@ -65,60 +70,82 @@ const Export = () => {
 
         try {
             const StoryBeatsToScreenplayRes = await storyBeatsToScreenplay(storyBeatsStr, apiKey);
-            const screenplay = StoryBeatsToScreenplayRes?.choices[0]?.message?.content ?? "";
 
-            const versions = isRewrite ? [
-                ...(project.script?.versions ?? []),
-                {id: uuidv4(), text: screenplay},
-            ] : project.script?.versions ?? [{id: uuidv4(), text: screenplay}]
+            if (typeof StoryBeatsToScreenplayRes === 'number') {
+                if (StoryBeatsToScreenplayRes === 401) dispatch(showDialogError(true));
+            } else {
+                dispatch(showDialogError(false));
+                const screenplay = StoryBeatsToScreenplayRes?.choices[0]?.message?.content ?? "";
 
-            const script = {
-                screenplay: screenplay,
-                treatment: undefined,
-                versions: versions,
-                critique: undefined,
-                analysis: undefined,
-                consistency: undefined,
-                whoWroteWhat: undefined,
+                const versions = isRewrite ? [
+                    ...(project.script?.versions ?? []),
+                    {id: uuidv4(), text: screenplay},
+                ] : project.script?.versions ?? [{id: uuidv4(), text: screenplay}]
+
+                const script: Script = {
+                    screenplay: screenplay,
+                    treatment: undefined,
+                    versions: versions,
+                    critique: undefined,
+                    analysis: undefined,
+                    consistency: undefined,
+                    whoWroteWhat: undefined,
+                    critiqueStage: MenuCardStage.UNINITIALIZED,
+                    analysisStage: MenuCardStage.UNINITIALIZED,
+                    consistencyStage: MenuCardStage.UNINITIALIZED,
+                    whoWroteWhatStage: MenuCardStage.UNINITIALIZED,
+                }
+
+                const updatedProject: Project = {
+                    ...project,
+                    script: script
+                };
+                dispatch(updateProject(updatedProject))
+
+                setLoading(false);
+                setCurrentText(screenplay);
+                if (isRewrite && !!script?.versions && script.versions.length > 0) setCurrentVersionIndex(script.versions.length);
             }
-
-            const updatedProject: Project = {
-                ...project,
-                script: script
-            };
-            dispatch(updateProject(updatedProject))
-
-            setLoading(false);
-            setCurrentText(screenplay);
-            if (isRewrite && !!project?.script?.versions && project.script.versions.length > 0) setCurrentVersionIndex(project.script.versions.length);
         } catch (error) {
             console.error("Error fetching screenplay for export:", error);
         }
     };
 
-    const fetchTreatment = async () => {
-        if (!project || !project.storyBeats || !project.script) return;
+    const debouncedFetchScreenplay = useRef(debounce(() => fetchScreenplay(false), 1000));
 
-        const storyBeatsStr = "My storybeats are:\\n" + project.storyBeats.map((s, i) => `${i + 1}: ${s.text}`).join('\n');
+    useEffect(() => {
+        if (!script || !script?.screenplay) {
+            debouncedFetchScreenplay.current();
+        }
+    }, []);
+
+    const fetchTreatment = async () => {
+        if (!project || !script) return;
+
+        const prompt = `My screenplay is:\n ${script.screenplay}`
 
         try {
-            const StoryBeatsToScreenplayRes = await storyBeatsToTreatment(storyBeatsStr, apiKey);
-            const treatment = StoryBeatsToScreenplayRes?.choices[0]?.message?.content ?? "";
-            const script = {
-                screenplay: project?.script?.screenplay,
-                treatment: treatment,
-                versions: project?.script?.versions ?? [],
-                critique: undefined,
-                analysis: undefined,
-                consistency: undefined,
-                whoWroteWhat: undefined,
-            }
+            const storyBeatsToTreatmentRes = await storyBeatsToTreatment(prompt, apiKey);
 
-            const updatedProject: Project = {
-                ...project,
-                script: script
-            };
-            dispatch(updateProject(updatedProject))
+            if (typeof storyBeatsToTreatmentRes === 'number') {
+                if (storyBeatsToTreatmentRes === 401) dispatch(showDialogError(true));
+            } else {
+                dispatch(showDialogError(false));
+                const treatment = storyBeatsToTreatmentRes?.choices[0]?.message?.content ?? "";
+
+
+                const updatedScript = {
+                    ...script,
+                    treatment: treatment,
+                }
+
+                const updatedProject: Project = {
+                    ...project,
+                    script: updatedScript
+                };
+                dispatch(updateProject(updatedProject))
+
+            }
         } catch (error) {
             console.error("Error fetching screenplay for export:", error);
         }
@@ -127,7 +154,6 @@ const Export = () => {
     const handleRewriteScreenplay = () => {
         setLoading(true);
         fetchScreenplay(true).catch((e) => console.log("fetchScreenplay error:", e));
-
     }
 
     const handleShowTreatment = () => {
@@ -136,72 +162,290 @@ const Export = () => {
         setShowTreatment(!showTreatment);
     }
 
+    const handleMenuAction = async (
+        menuItem: MenuItem,
+        menuTitle: string,
+        prompt: string,
+        apiFunction: (prompt: string, apiKey: string) =>  Promise<number | ParsedChatCompletion<null> | undefined>,
+        successHandler: (response: ParsedChatCompletion<null> | undefined) => Script,
+        updateCondition: boolean,
+    ) => {
+        if (!project || !script) return;
+
+        setSelectedMenuItem(menuItem);
+
+        const createNewScript = (stage: MenuCardStage): Script | undefined => {
+            if (!project || !script) return;
+
+            switch(menuItem) {
+                case MenuItem.CRITIQUE:
+                    return { ...script, critiqueStage: stage };
+                case MenuItem.ANALYSE:
+                    return { ...script, analysisStage: stage };
+                case MenuItem.CONSISTENCY:
+                    return { ...script, consistencyStage: stage };
+                case MenuItem.WHO:
+                    return { ...script, whoWroteWhatStage: stage };
+                default:
+                    return script;
+            }
+        };
+
+        const newScript = createNewScript(
+            updateCondition ? MenuCardStage.LOADING : MenuCardStage.SHOWN
+        );
+
+        setScript(newScript);
+
+        const updatedProject: Project = {
+            ...project,
+            script: newScript
+        };
+        dispatch(updateProject(updatedProject))
+
+        if (updateCondition) {
+            setMenuSecondTitle(menuTitle);
+
+            try {
+                const response = await apiFunction(prompt, apiKey);
+
+                if (typeof response === 'number') {
+                    if (response === 401) dispatch(showDialogError(true));
+                } else {
+                    dispatch(showDialogError(false));
+                    const updatedScript = successHandler(response);
+
+                    const updatedProject: Project = {
+                        ...project,
+                        script: updatedScript
+                    };
+                    dispatch(updateProject(updatedProject))
+                }
+            } catch (error) {
+                console.error(`Error handling ${menuItem}:`, error);
+            } finally {
+                setMenuSecondTitle('');
+            }
+        }
+    };
+
+    const handleCritique = () => {
+        if (!project || !script) return;
+
+        const prompt = `I am looking for a critique for this script draft: ${script}`;
+
+        handleMenuAction(
+            MenuItem.CRITIQUE,
+            'Loading critique',
+            prompt,
+            runCritique,
+            (response) => {
+                const critiqueRes = response?.choices[0]?.message?.parsed ?? {
+                    strength: '',
+                    improvementArea: '',
+                    improvementSummary: ''
+                };
+
+                return {
+                    ...script,
+                    critique: critiqueRes,
+                    critiqueStage: MenuCardStage.SHOWN,
+                } as Script;
+            },
+            script.critiqueStage === MenuCardStage.NEEDS_UPDATE || script.critiqueStage === MenuCardStage.UNINITIALIZED
+
+        );
+    };
+
+    const handleAnalyse = () => {
+        if (!project || !script) return;
+
+        const prompt = `I need an analysis for this script draft: ${script}`;
+
+        handleMenuAction(
+            MenuItem.ANALYSE,
+            'Loading analysis',
+            prompt,
+            runAnalysis,
+            (response) => {
+                const analysisRes = response?.choices[0]?.message?.parsed ?? {
+                    incitingIncident: '',
+                    characterDevelopment: '',
+                    thematicImplications: '',
+                    narrativeForeshadowing: ''
+                };
+                return {
+                    ...script,
+                    analysis: analysisRes,
+                    analysisStage: MenuCardStage.SHOWN,
+                } as Script;
+            },
+            script.analysisStage === MenuCardStage.NEEDS_UPDATE || script.analysisStage === MenuCardStage.UNINITIALIZED
+        );
+    };
+
+    const handleCheckConsistency = () => {
+        if (!project || !script) return;
+
+        const prompt = `I need to check the consistency of this script draft: ${script}`;
+
+        handleMenuAction(
+            MenuItem.CONSISTENCY,
+            'Checking consistency',
+            prompt,
+            checkScriptConsistency,
+            (response) => {
+                // @ts-expect-error It has this format
+                const consistencyRes = response?.choices[0]?.message?.parsed.inconsistencies ?? [];
+
+                return {
+                    ...script,
+                    consistency: consistencyRes,
+                    consistencyStage: MenuCardStage.SHOWN,
+                } as Script;
+            },
+            script.consistencyStage === MenuCardStage.NEEDS_UPDATE || script.consistencyStage === MenuCardStage.UNINITIALIZED
+        );
+    };
+
     const handleSentenceRephrase = async (selectedText: string) => {
-        if (!project || !project.storyBeats || !project.script) return;
+        if (!project || !script) return;
 
         setSelectedMenuItem(MenuItem.REPHRASE);
         if (rephrasedSentence) setRephrasedSentence('');
         setHighlightedText(selectedText);
 
         const prompt = `Rephrase this sentence: ${selectedText}`
-        const context = `\nThis is the context/story beat for the sentence: ${!project.script}`
+        const context = `\nThis is the context/story beat for the sentence: ${!script}`
 
         try {
             const rephraseRes = await rephraseSentence(prompt + context, apiKey);
-            const rephrasedNew = rephraseRes?.choices[0].message.content ?? '';
-            setRephrasedSentence(rephrasedNew);
+
+            if (typeof rephraseRes === 'number') {
+                if (rephraseRes === 401) dispatch(showDialogError(true));
+            } else {
+                dispatch(showDialogError(false));
+                const rephrasedNew = rephraseRes?.choices[0].message.content ?? '';
+                setRephrasedSentence(rephrasedNew);
+            }
         } catch (err) {
             console.error("Refinement Error rephrasing sentence:", err);
         }
     }
 
     const handleSentenceExpand = async (selectedText: string) => {
-        if (!project || !project.storyBeats || !project.script) return;
+        if (!project || !script) return;
 
         setSelectedMenuItem(MenuItem.EXPAND);
         if (extendedSentence) setExtendedSentence('');
         setHighlightedText(selectedText);
 
         const prompt = `Continue on writing from this sentence: ${selectedText}`
-        const context = `\nThis is the context/story beat for the sentence: ${!project.script}`
+        const context = `\nThis is the context/story beat for the sentence: ${!script}`
 
         try {
             const extendedRes = await extendSentence(prompt + context, apiKey);
-            const extendedNew = extendedRes?.choices[0].message.content ?? '';
-            setExtendedSentence(extendedNew);
+
+            if (typeof extendedRes === 'number') {
+                if (extendedRes === 401) dispatch(showDialogError(true));
+            } else {
+                dispatch(showDialogError(false));
+                const extendedNew = extendedRes?.choices[0].message.content ?? '';
+                setExtendedSentence(extendedNew);
+            }
         } catch (err) {
             console.error("Refinement Error rephrasing sentence:", err);
         }
     }
 
     const handleSentenceCritique = async (selectedText: string) => {
-        if (!project || !project.storyBeats || !project.script) return;
+        if (!project || !script) return;
 
         setSelectedMenuItem(MenuItem.CRITIQUE_SENTENCE);
         if (sentenceCritique) setSentenceCritique('');
         setHighlightedText(selectedText);
 
         const prompt = `Critique this sentence: ${selectedText}`
-        const context = `\nThis is the context/story beat for the sentence: ${!project.script}`
+        const context = `\nThis is the context/story beat for the sentence: ${!script}`
 
         try {
             const critiqueRes = await critiqueSentence(prompt + context, apiKey);
-            const critiqueNew = critiqueRes?.choices[0].message.content ?? '';
-            setSentenceCritique(critiqueNew);
+
+            if (typeof critiqueRes === 'number') {
+                if (critiqueRes === 401) dispatch(showDialogError(true));
+            } else {
+                dispatch(showDialogError(false));
+                const critiqueNew = critiqueRes?.choices[0].message.content ?? '';
+                setSentenceCritique(critiqueNew);
+            }
         } catch (err) {
             console.error("Refinement Error rephrasing sentence:", err);
         }
     }
 
-    console.log("project?.script", project?.script);
+    const addSentenceToStepText = (extend: boolean = false) => {
+        if (!project || !script || !highlightedText) return;
+
+        const newSentence = extend ? extendedSentence : rephrasedSentence;
+        const newText = script.screenplay.replace(highlightedText, newSentence);
+
+        const updatedScript: Script = {
+            ...script,
+            screenplay: newText,
+            versions: script.versions.map((version) =>
+                version.id === script?.versions[currentVersionIndex].id
+                    ? {...version, text: newText}
+                    : version
+            )
+        }
+
+        setScript(updatedScript);
+
+        const updatedProject: Project = {
+            ...project,
+            script: updatedScript
+        };
+
+        dispatch(updateProject(updatedProject))
+    }
+
+    // const handleReplaceInconsistentText = (incIndex: number) => {
+    //     if (!project || !script) return;
+    //
+    //     if (!!script?.consistency && script.consistency.length > 0) {
+    //         const inconsistentText = script?.consistency[incIndex].text;
+    //         const revisedText = script?.consistency[incIndex].revisedText;
+    //         const newText = script.screenplay.replace(inconsistentText, revisedText);
+    //
+    //         const updatedScript: Script = {
+    //             ...script,
+    //             screenplay: newText,
+    //             versions: script.versions.map((version) =>
+    //                 version.id === script?.versions[currentVersionIndex].id
+    //                     ? {...version, text: newText}
+    //                     : version
+    //             )
+    //         }
+    //
+    //         setScript(updatedScript);
+    //
+    //         const updatedProject: Project = {
+    //             ...project,
+    //             script: updatedScript
+    //         };
+    //
+    //         dispatch(updateProject(updatedProject))
+    //     }
+    // }
 
     return (<>{
-        ((!project?.script && !project?.script?.screenplay) || loading)
+        (!script?.screenplay || loading)
             ? <ExportSkeleton/>
+
             : <Box sx={{display: 'flex', flexDirection: 'row', height: 'calc(100vh - 192px)'}}>
                 <ScriptTextField style={{flex: 7}}
                                  text={currentText}
-                                 versions={project?.script?.versions ?? []}
+                                 versions={script?.versions ?? []}
                                  ref={textFieldContainerRef}
                                  currentVersionIndex={currentVersionIndex}
                                  setCurrentVersionIndex={setCurrentVersionIndex}
@@ -209,28 +453,33 @@ const Export = () => {
                 />
                 {/*<ScriptEditor text={project?.script.screenplay} />*/}
 
-                <Box sx={{flex: 3, width: '100%', mt: 3, minWidth: '500px'}}>
+                <Box sx={{flex: 3, width: '100%', mt: 3, minWidth: '500px', height: '100%'}}>
                     <CompletionMenu project={project}
-                                    setCurrentVersionIndex={() => {}}
                                     handleRewriteScreenplay={handleRewriteScreenplay}
                                     handleShowTreatment={handleShowTreatment}
                                     contextMenuRef={contextMenuRef}
                                     menuSecondTitle={menuSecondTitle}
-                                    setMenuSecondTitle={setMenuSecondTitle}
                                     selectedMenuItem={selectedMenuItem}
-                                    setSelectedMenuItem={setSelectedMenuItem}
+                                    onCritique={handleCritique}
+                                    onAnalyse={handleAnalyse}
+                                    onConsistencyCheck={handleCheckConsistency}
                     />
-
+                    <Box style={{
+                        // flex: 5,
+                        marginTop: 10,
+                        overflowY: 'auto', height: '100%'
+                    }}>
                     <CompletionMenuCards project={project}
-                                         currentVersionIndex={0}
-                                         loadingMenu={false}
+                                         script={script}
                                          selectedMenuItem={selectedMenuItem}
                                          menuWidth={menuWidth}
                                          rephrasedSentence={rephrasedSentence}
                                          extendedSentence={extendedSentence}
                                          sentenceCritique={sentenceCritique}
-                                         highlightedText={highlightedText}
+                                         onAddSentence={addSentenceToStepText}
+                                         // onClickConsistencyCheck={(index) => handleReplaceInconsistentText(index)}
                     />
+                    </Box>
                 </Box>
 
                 <FloatingContextMenu textFieldRef={textFieldContainerRef}
@@ -241,19 +490,9 @@ const Export = () => {
 
                 <TreatmentDialog open={showTreatment}
                                  onClose={handleShowTreatment}
-                                 onExport={() => {
-                                 }}
                                  onRewrite={fetchTreatment}
-                                 treatment={project.script.treatment}
+                                 treatment={script.treatment}
                 />
-
-                {/*<Box sx={{ display: 'flex', flexDirection: 'column', justifyContent: 'flex-start', alignItems: 'end', maxWidth:240 }}>*/}
-                {/*    <Button onClick={handleRegenerateScreenplay} variant="contained" style={{marginTop:10}}>{project && !project.export ? "Generate Screenplay" : "Re-Generate Screenplay"}</Button>*/}
-                {/*    <Button onClick={handleRegenerateTreatment} variant="contained" style={{marginTop:10}}>{project && !project.export ? "Generate Treatment" : "Re-Generate Treatment"}</Button>*/}
-                {/*    <Tooltip title={"TODO"}>*/}
-                {/*        <Button onClick={handleShare} variant="contained" style={{marginTop:10}}>Share</Button>*/}
-                {/*    </Tooltip>*/}
-                {/*</Box>*/}
             </Box>
     }</>)
 }

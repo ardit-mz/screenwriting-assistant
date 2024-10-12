@@ -16,6 +16,11 @@ export const STORY_BEATS_SCHEMA = z.object({
         .describe("an array of 5 story beats for a five-act structure")
 }).describe("an object containing an array of 5 story beats for a five-act structure");
 
+export const REWRITE_STORY_BEATS_SCHEMA = z.object({
+    story_beats: z.array(z.string())
+        .describe("an array of story beats for a five-act story structure")
+}).describe("an object containing an array of story beats for a five-act story structure");
+
 export const IMPULSES_SCHEMA = z.object({
     index: z.number().describe("the story beat index"),
     impulses: z.array(z.string())
@@ -26,9 +31,9 @@ export const IMPULSES_SCHEMA = z.object({
 /* Refinement */
 
 export const UNIVERSAL_EMOTION_SCHEMA = z.object({
-    core_emotion: z.string().describe("the story beat core emotion"),
-    core_emotion_reason: z.string().describe("the reason why this is the story beat core emotion"),
-    suggestions_for_enhanced_emotion: z
+    coreEmotion: z.string().describe("the story beat core emotion"),
+    reason: z.string().describe("the reason why this is the story beat core emotion"),
+    suggestions: z
         .array(z.string())
         .describe("an array of 5 enhanced emotions for a story beat")
 }).describe("an object used to analyse the core emotion and present creative, emotional impulses for the provided story beat")
@@ -72,15 +77,15 @@ export const QUESTIONS_SCHEMA = z.object({
 
 export const CRITIQUE_SCHEMA = (part: string) => z.object({
     strength: z.string().describe(`a short description of the strengths of the ${part}`),
-    areas_for_improvement: z.string().describe(`a short description of the areas for improvement of the ${part}`),
-    summary_for_improvement: z.string().describe(`a very short summary for improvement of the ${part}`),
+    improvementArea: z.string().describe(`a short description of the areas for improvement of the ${part}`),
+    improvementSummary: z.string().describe(`a very short summary for improvement of the ${part}`),
 }).describe(`an object used to critique the provided ${part} and find its strengths and areas for improvement`)
 
 export const ANALYSIS_SCHEMA = (part: string) => z.object({
-    inciting_incident: z.string().describe(`a short description of the inciting incident for the provided ${part}`),
-    character_development: z.string().describe(`a short description of the character development for the provided ${part}`),
-    thematic_implications: z.string().describe(`a short description of the thematic implications for the provided ${part}`),
-    narrative_foreshadowing: z.string().describe(`a short description of the narrative foreshadowing for the provided ${part}`),
+    incitingIncident: z.string().describe(`a short description of the inciting incident for the provided ${part}`),
+    characterDevelopment: z.string().describe(`a short description of the character development for the provided ${part}`),
+    thematicImplications: z.string().describe(`a short description of the thematic implications for the provided ${part}`),
+    narrativeForeshadowing: z.string().describe(`a short description of the narrative foreshadowing for the provided ${part}`),
 }).describe(`an object used to analyse the provided ${part} and its inciting incident, character development, thematic implications, and narrative foreshadowing`)
 
 

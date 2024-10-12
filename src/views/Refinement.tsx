@@ -1,26 +1,33 @@
-// views/Refinement.tsx
-
 import Box from "@mui/material/Box";
 import {useEffect, useRef, useState} from "react";
 import {Skeleton, StepLabel, TextField} from "@mui/material";
 import SwaStepIcon from "../icons/SwaStepIcon.tsx";
-import AddStepConnector from "../components/stepper/SwaStepConnector.tsx";
 import {useDispatch, useSelector} from "react-redux";
-import {selectCurrentProject, updateStoryBeat, updateStoryBeats} from "../features/project/ProjectSlice.ts";
+import {selectCurrentProject, updateStoryBeat} from "../features/project/ProjectSlice.ts";
 import {AppDispatch} from "../store.ts";
 import FloatingContextMenu from "../components/menu/FloatingContextMenu.tsx";
 import PaginationVersions from "../components/version/PaginationVersions.tsx";
-import RefinementSideCard from "../components/card/RefinementSideCard.tsx";
-import {critiqueSentence, extendSentence, getStoryBeatImpulse, rephraseSentence} from "../api/openaiAPI.ts";
-import {v4 as uuidv4} from "uuid";
+import {
+    critiqueSentence,
+    extendSentence,
+    getStoryBeatUniversalEmotion,
+    getStoryBeatUniversalQuestion,
+    rephraseSentence,
+    rewriteStoryBeat,
+    runAnalysis,
+    runCritique
+} from "../api/openaiAPI.ts";
 import {StoryBeat} from "../types/StoryBeat";
 import {selectApiKey} from "../features/model/ModelSlice.ts";
-import {ImpulseStage} from "../enum/ImpulseStage.ts";
-import {QuestionStage} from "../enum/QuestionStage.ts";
-import {UniversalEmotionStage} from "../enum/UniversalEmotionStage.ts";
 import {MenuItem} from "../enum/MenuItem.ts";
 import RefinementMenuCards from "../components/card/RefinementMenuCards.tsx";
 import RefinementMenu from "../components/menu/RefinementMenu.tsx";
+import NavigateToStepCard from "../components/card/NavigateToStepCard.tsx";
+import {MenuCardStage} from "../enum/MenuCardStage.ts";
+import {v4 as uuidv4} from "uuid";
+import {ParsedChatCompletion} from "openai/resources/beta/chat/completions";
+import {Question} from "../types/Question";
+import {showDialogError} from "../features/drawer/DrawerSlice.ts";
 
 const Refinement = () => {
     const project = useSelector(selectCurrentProject);
@@ -51,7 +58,8 @@ const Refinement = () => {
             setCurrentStepText(version?.text || '');
             setSelectedStep(step);
         }
-    }, [currentStepIndex, currentVersionIndex]);
+    // }, [steps]);
+    }, [steps, currentStepIndex, currentVersionIndex]);
 
     useEffect(() => {
         if (contextMenuRef.current) {
@@ -62,22 +70,33 @@ const Refinement = () => {
     const handleStepTextChange = (newText: string) => {
         if (!steps || !selectedStep) return;
 
+        const hasTextChanged = selectedStep.text.replace(/\s+/g, '') !== newText.replace(/\s+/g, '');
+
         const updatedStep: StoryBeat = {
             ...selectedStep,
             text: newText,
+            textUpdated: hasTextChanged,
             versions: selectedStep.versions.map((version) =>
                 version.id === selectedStep.versions[currentVersionIndex].id
-                    ? { ...version, text: newText }
+                    ? {...version, text: newText}
                     : version
             ),
+            emotionStage: MenuCardStage.NEEDS_UPDATE,
+            questionStage: MenuCardStage.NEEDS_UPDATE,
+            critiqueStage: MenuCardStage.NEEDS_UPDATE,
+            analysisStage: MenuCardStage.NEEDS_UPDATE,
         }
 
-        const updatedSteps = steps.map((step, index) =>
-            index === currentStepIndex ? updatedStep : step
-        );
+        // const updatedSteps = steps.map((step, index) =>
+        //     index === currentStepIndex ? updatedStep : step
+        // );
 
-        setSteps(updatedSteps);
-        setCurrentStepText(newText);
+        // setCurrentStepText(newText);
+        // setSelectedStep(updatedStep);
+        // setSteps(updatedSteps);
+        setSteps((prevSteps = []) =>
+            prevSteps.map((step, i) => (i === currentStepIndex ? updatedStep : step))
+        );
     };
 
     const handleStepTextBlur = () => {
@@ -93,143 +112,347 @@ const Refinement = () => {
 
     const handlePrev = () => {
         if (steps && currentStepIndex > 0) {
-            // setCurrentStepText(steps[currentStepIndex - 1].text);
-            setCurrentStepIndex(currentStepIndex - 1);
+            const prevIndex = currentStepIndex - 1;
+            // const step = steps[prevIndex];
+            setCurrentStepIndex(prevIndex);
+            // setCurrentStepText(step?.versions[prevIndex]?.text || step?.text || '');
+            // setSelectedStep(step);
+            setSelectedMenuItem(null);
         }
     };
 
     const handleNext = () => {
         if (steps && currentStepIndex < steps?.length - 1) {
-            // setCurrentStepText(steps[currentStepIndex + 1].text);
-            setCurrentStepIndex(currentStepIndex + 1);
+            const nextIndex = currentStepIndex + 1;
+            // const step = steps[nextIndex];
+            setCurrentStepIndex(nextIndex);
+            // setCurrentStepText(step?.versions[nextIndex]?.text || step?.text || '');
+            // setSelectedStep(step);
+            setSelectedMenuItem(null);
         }
-    };
-
-    // const moveLeft = () => console.log("Refinement moveLeft");
-    // const moveRight = () => console.log("Refinement moveRight");
-
-    const addStep = async (newIndex: number) => {
-        if (!project || !steps || !selectedStep) return;
-
-        setMenuSecondTitle("Adding a new story beat");
-        setLoadingStep(true);
-        setLoadingMenu(true);
-
-        const id = uuidv4();
-        const newStoryBeat: StoryBeat = {
-            id: id,
-            text: "",
-            locked: false,
-            index: newIndex,
-            impulses: [],
-            impulseStage: ImpulseStage.LOADING,
-            versions: [{id: id, text: ""}],
-            questions: undefined,
-            questionStage: QuestionStage.UNINITIALIZED,
-            universalEmotion: undefined,
-            universalEmotionStage: UniversalEmotionStage.UNINITIALIZED,
-            project: project,
-            analysis: undefined,
-            critique: undefined,
-        }
-
-        const updatedSteps = [
-            ...steps.slice(0, newIndex),
-            newStoryBeat,
-            ...steps.slice(newIndex)
-        ];
-        setSteps(updatedSteps);
-
-        if (project && project.id) {
-            dispatch(updateStoryBeats({
-                projectId: project.id,
-                storyBeats: updatedSteps
-            }));
-        }
-
-        try {
-            const previousStep = steps[newIndex - 1];
-            const nextStep = steps[newIndex + 1];
-            const storyBeatsStr = "My story beats are:\\n" + project.storyBeats.map((s, i) => `${i + 1}: ${s.text}`).join('\n');
-            const storyBeatPrompt = `I need impulses just for the new story beat between the current story beats: ${previousStep?.index} and : ${nextStep?.index}`;
-            const response = await getStoryBeatImpulse(storyBeatsStr + storyBeatPrompt, apiKey);
-            console.log("SwaStep addStep response", response);
-
-            // @ts-expect-error It has this format
-            const impulses = response?.choices[0]?.message?.parsed?.impulses || [];
-
-            console.log("impulses", impulses)
-            const updatedStoryBeat: StoryBeat = {
-                ...newStoryBeat,
-                impulses: impulses,
-                impulseStage: ImpulseStage.SHOWN,
-                questionStage: QuestionStage.HIDDEN,
-                universalEmotionStage: UniversalEmotionStage.HIDDEN
-            };
-
-            console.log("updatedStoryBeat", updatedStoryBeat)
-
-            const finalUpdatedSteps = [
-                ...updatedSteps.slice(0, newIndex),
-                updatedStoryBeat,
-                ...updatedSteps.slice(newIndex + 1)
-            ];
-            console.log("finalUpdatedSteps", finalUpdatedSteps)
-
-
-            const updatedStepsWithIndices = finalUpdatedSteps.map((step, index) => ({
-                ...step,
-                index: index,
-            }));
-
-            setSteps(updatedStepsWithIndices);
-
-            if (project && project.id) {
-                dispatch(updateStoryBeat({
-                    projectId: project.id,
-                    storyBeat: updatedStoryBeat
-                }));
-            }
-
-            setSelectedStep(updatedStoryBeat);
-        } catch (error) {
-            console.error("Error fetching impulses for the new step:", error);
-        }
-
-        setCurrentStepIndex(newIndex);
-        setCurrentStepText(newStoryBeat.text);
-        setLoadingMenu(false);
-        setLoadingStep(false);
-        setMenuSecondTitle('');
     };
 
     const goToStoryBeat = (index: number) => {
         if (!steps || index === currentStepIndex) return;
 
         setCurrentStepIndex(index);
-        setSelectedStep(steps[index]);
-        setCurrentStepText(steps[index].text);
+        // setSelectedStep(steps[index]);
+        // setCurrentStepText(steps[index].text);
     }
 
-    const removeStep = () => {
-        if (!steps || !selectedStep) return;
+    const handleMenuAction = async (
+        menuItem: MenuItem,
+        menuTitle: string,
+        prompt: string,
+        apiFunction: (prompt: string, apiKey: string) =>  Promise<number | ParsedChatCompletion<null> | undefined>,
+        successHandler: (response: ParsedChatCompletion<null> | undefined) => StoryBeat,
+        updateCondition: boolean,
+    ) => {
+        if (!project || !steps || !selectedStep) return;
 
-        const updatedSteps = steps.filter((_, i) => i !== currentStepIndex);
-        setSteps(updatedSteps);
+        setSelectedMenuItem(menuItem);
 
-        if (project && project.id) {
-            dispatch(updateStoryBeats({
-                projectId: project.id,
-                storyBeats: updatedSteps
-            }));
+        const createNewStoryBeat = (stage: MenuCardStage): StoryBeat => {
+            switch(menuItem) {
+                case MenuItem.EMOTION:
+                    return { ...selectedStep, emotionStage: stage };
+                case MenuItem.QUESTION:
+                    return { ...selectedStep, questionStage: stage };
+                case MenuItem.CRITIQUE:
+                    return { ...selectedStep, critiqueStage: stage };
+                case MenuItem.ANALYSE:
+                    return { ...selectedStep, analysisStage: stage };
+                default:
+                    return selectedStep;
+            }
+        };
+
+        const storyBeat = createNewStoryBeat(
+            updateCondition ? MenuCardStage.LOADING : MenuCardStage.SHOWN
+        );
+
+        setSteps((prevSteps = []) =>
+            prevSteps.map((step, i) => (i === currentStepIndex ? storyBeat : step))
+        );
+
+        if (project?.id) {
+            dispatch(updateStoryBeat({ projectId: project.id, storyBeat: storyBeat }));
         }
 
-        if (currentStepIndex >= updatedSteps.length) {
-            setCurrentStepIndex(updatedSteps.length - 1);
-        } else {
-            setCurrentStepIndex(currentStepIndex);
+        // if (!updateCondition) {
+        //     const newStoryBeat = (): StoryBeat => {
+        //         switch(menuItem) {
+        //             case MenuItem.EMOTION:
+        //                 return {
+        //                     ...selectedStep,
+        //                     emotionStage: MenuCardStage.SHOWN,
+        //                 };
+        //             case MenuItem.QUESTION:
+        //                 return {
+        //                     ...selectedStep,
+        //                     questionStage: MenuCardStage.SHOWN,
+        //                 };
+        //             case MenuItem.CRITIQUE:
+        //                 return {
+        //                     ...selectedStep,
+        //                     critiqueStage: MenuCardStage.SHOWN,
+        //                 };
+        //             case MenuItem.ANALYSE:
+        //                 return {
+        //                     ...selectedStep,
+        //                     analysisStage: MenuCardStage.SHOWN,
+        //                 };
+        //             default: return selectedStep;
+        //         }
+        //     }
+        //
+        //     const updatedStoryBeat: StoryBeat = newStoryBeat();
+        //     if (updatedStoryBeat) {
+        //         setSteps((prevSteps = []) =>
+        //             prevSteps.map((step, i) => (i === currentStepIndex ? updatedStoryBeat : step))
+        //         );
+        //
+        //         if (project && project.id) {
+        //             dispatch(updateStoryBeat({ projectId: project.id, storyBeat: updatedStoryBeat }));
+        //         }
+        //     }
+        //
+        //     return;
+        // }
+        if (updateCondition) {
+            setMenuSecondTitle(menuTitle);
+
+            // const newStoryBeat = (): StoryBeat => {
+            //     switch(menuItem) {
+            //         case MenuItem.EMOTION:
+            //             return {
+            //                 ...selectedStep,
+            //                 emotionStage: MenuCardStage.LOADING,
+            //             };
+            //         case MenuItem.QUESTION:
+            //             return {
+            //                 ...selectedStep,
+            //                 questionStage: MenuCardStage.LOADING,
+            //             };
+            //         case MenuItem.CRITIQUE:
+            //             return {
+            //                 ...selectedStep,
+            //                 critiqueStage: MenuCardStage.LOADING,
+            //             };
+            //         case MenuItem.ANALYSE:
+            //             return {
+            //                 ...selectedStep,
+            //                 analysisStage: MenuCardStage.LOADING,
+            //             };
+            //         default: return selectedStep;
+            //     }
+            // }
+            //
+            // const updatedStoryBeat: StoryBeat = newStoryBeat();
+            // if (updatedStoryBeat) {
+            //     setSteps((prevSteps = []) =>
+            //         prevSteps.map((step, i) => (i === currentStepIndex ? updatedStoryBeat : step))
+            //     );
+            //
+            //     if (project && project.id) {
+            //         dispatch(updateStoryBeat({ projectId: project.id, storyBeat: updatedStoryBeat }));
+            //     }
+            // }
+
+            try {
+                setLoadingMenu(true);
+                const response = await apiFunction(prompt, apiKey);
+
+                if (typeof response === 'number') {
+                    if (response === 401) dispatch(showDialogError(true));
+                } else {
+                    dispatch(showDialogError(false));
+                    const updatedStoryBeat = successHandler(response);
+
+                    // setSelectedStep(updatedStoryBeat);
+                    setSteps((prevSteps = []) =>
+                        prevSteps.map((step, i) => (i === currentStepIndex ? updatedStoryBeat : step))
+                    );
+
+                    if (project && project.id) {
+                        dispatch(updateStoryBeat({projectId: project.id, storyBeat: updatedStoryBeat}));
+                    }
+                }
+            } catch (error) {
+                console.error(`Error handling ${menuItem}:`, error);
+            } finally {
+                setMenuSecondTitle('');
+                setLoadingMenu(false);
+                // setSelectedMenuItem(null);
+                if (menuItem === MenuItem.REWRITE) setLoadingStep(false);
+            }
         }
-    }
+    };
+
+    const rewrite = () => {
+        if (!project || !selectedStep) return;
+        setLoadingStep(true);
+
+        const prompt = `
+        "My story beats are:\\\\n ${project.storyBeats.map((s, i) => `${i + 1}: ${s.text}`).join('\n')}
+        The story beat I want you to rewrite is ${currentStepText}
+        `;
+
+        handleMenuAction(
+            MenuItem.REWRITE,
+            'Rewriting story beat',
+            prompt,
+            rewriteStoryBeat,
+            (response) => {
+                const text = response?.choices[0]?.message?.content ?? "";
+                return {
+                    ...selectedStep,
+                    text,
+                    versions: [...(selectedStep.versions || []), { id: uuidv4(), text }],
+                };
+            },
+            true //not needed for rewrite
+        );
+    };
+
+    const handleEmotion = () => {
+        if (!project || !selectedStep) return;
+
+        const prompt = `
+        This are my story beats:
+        ${project.storyBeats.map((s, i) => `${i + 1}: ${s.text}`).join('\n')}
+        
+        I am searching for the core emotion / creative impulses for the story beat: ${currentStepIndex + 1}: ${currentStepText}
+        `;
+
+        handleMenuAction(
+            MenuItem.EMOTION,
+            'Analysing emotion',
+            prompt,
+            getStoryBeatUniversalEmotion,
+            (response) => {
+                const emotionRes = response?.choices[0]?.message?.parsed ?? {
+                    coreEmotion: '',
+                    reason: '',
+                    suggestions: []};
+                return {
+                    ...selectedStep,
+                    emotion: {
+                        coreEmotion: emotionRes.coreEmotion,
+                        reason: emotionRes.reason,
+                        suggestions: emotionRes.suggestions,
+                    },
+                    emotionStage: MenuCardStage.SHOWN,
+                };
+            },
+            selectedStep.emotionStage === MenuCardStage.NEEDS_UPDATE || selectedStep.emotionStage === MenuCardStage.UNINITIALIZED
+        );
+    };
+
+    const handleQuestion = () => {
+        if (!project || !selectedStep) return;
+
+        const prompt = `
+        I want to analyse the following story beat in terms of which questions it answers and which question it raises: ${currentStepIndex + 1}
+        My story beats are:\n ${project.storyBeats.map((s, i) => `${i + 1}: ${s.text}`).join('\n')}
+        `;
+
+        handleMenuAction(
+            MenuItem.QUESTION,
+            'Finding questions',
+            prompt,
+            getStoryBeatUniversalQuestion,
+            (response) => {
+                const questions = response?.choices[0]?.message?.parsed ?? {
+                    questions_raised: [] as Question[],
+                    questions_answered: [] as Question[],
+                    questions_unanswered: [] as Question[],
+                };
+
+                const filterQuestions = (questions: Question[]) => questions.filter(question =>
+                        !!steps && question?.current_index !== undefined && question?.other_index !== undefined
+                        && question.current_index >= 0 && question.current_index <= steps.length
+                        && question.other_index >= 0 && question.other_index <= steps.length
+                );
+
+                const questionsRaised = filterQuestions(questions.questions_raised);
+                const questionsAnswered = filterQuestions(questions.questions_answered);
+                const questionsUnanswered = filterQuestions(questions.questions_unanswered);
+
+                return {
+                    ...selectedStep,
+                    questions: {
+                        id: uuidv4(),
+                        questions_raised: questionsRaised,
+                        questions_answered: questionsAnswered,
+                        questions_unanswered: questionsUnanswered,
+                    },
+                    questionStage: MenuCardStage.SHOWN,
+                };
+            },
+selectedStep.questionStage === MenuCardStage.NEEDS_UPDATE || selectedStep.questionStage === MenuCardStage.UNINITIALIZED
+        );
+    };
+
+    const handleCritique = () => {
+        if (!project || !selectedStep) return;
+
+        const prompt = `
+        I am looking for a critique on the story beat: ${currentStepIndex}: ${currentStepText}
+        My story beats are:\n ${project.storyBeats.map((s, i) => `${i + 1}: ${s.text}`).join('\n')}
+        `;
+
+        handleMenuAction(
+            MenuItem.CRITIQUE,
+            'Loading critique',
+            prompt,
+            runCritique,
+            (response) => {
+                const critiqueRes = response?.choices[0]?.message?.parsed ?? {
+                    strength: '',
+                    improvementArea: '',
+                    improvementSummary: ''
+                };
+                return {
+                    ...selectedStep,
+                    critique: critiqueRes,
+                    critiqueStage: MenuCardStage.SHOWN,
+                };
+            },
+            selectedStep.critiqueStage === MenuCardStage.NEEDS_UPDATE || selectedStep.critiqueStage === MenuCardStage.UNINITIALIZED
+
+    );
+    };
+
+    const handleAnalysis = () => {
+        if (!project || !selectedStep) return;
+
+        const prompt = `
+        I need an analysis for the story beat: ${currentStepIndex + 1}: ${currentStepText}
+        My story beats are:\n ${project.storyBeats.map((s, i) => `${i + 1}: ${s.text}`).join('\n')}
+        `;
+
+        handleMenuAction(
+            MenuItem.ANALYSE,
+            'Loading analysis',
+            prompt,
+            runAnalysis,
+            (response) => {
+                const analysisRes = response?.choices[0]?.message?.parsed ?? {
+                    incitingIncident: '',
+                    characterDevelopment: '',
+                    thematicImplications: '',
+                    narrativeForeshadowing: ''
+                };
+                return {
+                    ...selectedStep,
+                    analysis: analysisRes,
+                    analysisStage: MenuCardStage.SHOWN,
+                };
+            },
+            selectedStep.analysisStage === MenuCardStage.NEEDS_UPDATE || selectedStep.analysisStage === MenuCardStage.UNINITIALIZED
+        );
+    };
 
     const handleSentenceRephrase = async (selectedText: string) => {
         if (!steps || !selectedStep) return;
@@ -242,8 +465,14 @@ const Refinement = () => {
 
         try {
             const rephraseRes = await rephraseSentence(prompt + context, apiKey);
-            const rephrasedNew = rephraseRes?.choices[0].message.content ?? '';
-            setRephrasedSentence(rephrasedNew);
+
+            if (typeof rephraseRes === 'number') {
+                if (rephraseRes === 401) dispatch(showDialogError(true));
+            } else {
+                dispatch(showDialogError(false));
+                const rephrasedNew = rephraseRes?.choices[0].message.content ?? '';
+                setRephrasedSentence(rephrasedNew);
+            }
         } catch (err) {
             console.error("Refinement Error rephrasing sentence:", err);
         }
@@ -260,8 +489,14 @@ const Refinement = () => {
 
         try {
             const extendedRes = await extendSentence(prompt + context, apiKey);
-            const extendedNew = extendedRes?.choices[0].message.content ?? '';
-            setExtendedSentence(extendedNew);
+
+            if (typeof extendedRes === 'number') {
+                if (extendedRes === 401) dispatch(showDialogError(true));
+            } else {
+                dispatch(showDialogError(false));
+                const extendedNew = extendedRes?.choices[0].message.content ?? '';
+                setExtendedSentence(extendedNew);
+            }
         } catch (err) {
             console.error("Refinement Error rephrasing sentence:", err);
         }
@@ -278,52 +513,88 @@ const Refinement = () => {
 
         try {
             const critiqueRes = await critiqueSentence(prompt + context, apiKey);
-            const critiqueNew = critiqueRes?.choices[0].message.content ?? '';
-            setSentenceCritique(critiqueNew);
+
+            if (typeof critiqueRes === 'number') {
+                if (critiqueRes === 401) dispatch(showDialogError(true));
+            } else {
+                dispatch(showDialogError(false));
+                const critiqueNew = critiqueRes?.choices[0].message.content ?? '';
+                setSentenceCritique(critiqueNew);
+            }
         } catch (err) {
             console.error("Refinement Error rephrasing sentence:", err);
         }
     }
 
-    // console.log("Refinement steps", steps)
+    const addSentenceToStepText = (extend: boolean = false) => {
+        if (!project || !steps || !selectedStep || !highlightedText) return;
+
+        const newSentence = extend ? extendedSentence : rephrasedSentence;
+        const newText = selectedStep.text.replace(highlightedText, newSentence);
+
+        const updatedStep: StoryBeat = {
+            ...selectedStep,
+            text: newText,
+            textUpdated: true,
+            versions: selectedStep.versions.map((version) =>
+                version.id === selectedStep.versions[currentVersionIndex].id
+                    ? {...version, text: newText}
+                    : version
+            ),
+        }
+
+        const updatedSteps = steps.map((step, index) =>
+            index === currentStepIndex ? updatedStep : step
+        );
+
+        setSteps(updatedSteps);
+        setSelectedStep(updatedSteps[currentStepIndex])
+
+        dispatch(updateStoryBeat({
+            projectId: project.id,
+            storyBeat: updatedStep
+        }))
+    }
 
     return (
         <Box sx={{
             display: 'flex',
             flexDirection: 'row',
             alignItems: 'start',
-            marginTop: 4,
-            width: '100vw',
+            mt: 4,
+            mb: 4,
+            pr: 8,
+            width: '90vw',
+            height: '100%',
             overflow: 'hidden',
             position: 'relative'
         }}>
             {(!!steps && steps.length > 0 && !!selectedStep)
                 ? <>
                     {/* Left */}
-                    {currentStepIndex > 0 &&
                         <Box sx={{
                             flex: 1,
                             flexDirection: 'row',
                             display: 'flex',
+                            mt: 5,
+                            height: `554px`,
                         }}>
-                            <RefinementSideCard onClick={handlePrev}
-                                                index={currentStepIndex - 1}
-                                                text={steps[currentStepIndex - 1]?.text}
-                                                tooltip="Select previous story beat"/>
+                            {currentStepIndex > 0 &&
+                                <NavigateToStepCard onClick={handlePrev} position={'left'}/>
+                            }
                         </Box>
-                    }
-                    <AddStepConnector onClick={() => addStep(currentStepIndex)}/>
 
                     {/* Middle */}
                     <Box style={{
                         display: 'flex',
-                        flex: 8,
+                        flex: 10,
                         flexDirection: 'row',
                         alignItems: 'flex-start',
                         padding: 0,
                         backgroundColor: '',
                         boxShadow: "none",
                         width: '100%',
+                        height: '100%',
                     }}
                     >
                         <Box style={{
@@ -331,24 +602,12 @@ const Refinement = () => {
                             flexDirection: 'column',
                             flex: 6,
                         }}>
-                            <div
-                                style={{
+                            <div style={{
                                     display: 'flex',
                                     flexDirection: 'row',
                                     justifyContent: "space-between",
                                 }}>
-
-                                <div style={{display: 'flex', flexDirection: 'row', alignItems: 'center'}}>
-                                    <StepLabel icon={<SwaStepIcon index={currentStepIndex}/>}></StepLabel>
-                                    {/*<SwaStepButton icon={<ArrowBackIcon/>}*/}
-                                    {/*               title={"Move story beat to the left"}*/}
-                                    {/*               onClick={moveLeft}*/}
-                                    {/*               disabled={loadingMenu}/>*/}
-                                    {/*<SwaStepButton icon={<ArrowForwardIcon/>}*/}
-                                    {/*               title={"Move story beat to the right"}*/}
-                                    {/*               onClick={moveRight}*/}
-                                    {/*               disabled={loadingMenu}/>*/}
-                                </div>
+                                <StepLabel icon={<SwaStepIcon index={currentStepIndex}/>}></StepLabel>
 
                                 {steps[currentStepIndex].versions?.length > 1
                                     && <PaginationVersions totalPages={selectedStep.versions.length}
@@ -363,7 +622,7 @@ const Refinement = () => {
                                                multiline
                                                margin={"normal"}
                                                variant='outlined'
-                                               // value={selectedStep.versions?.[currentVersionIndex]?.text || selectedStep.text || ''}
+                                        // value={selectedStep.versions?.[currentVersionIndex]?.text || selectedStep.text || ''}
                                                value={currentStepText}
                                                onChange={(e) => handleStepTextChange(e.target.value)}
                                                onBlur={handleStepTextBlur}
@@ -374,42 +633,35 @@ const Refinement = () => {
                             }
                         </Box>
 
-                        <Box style={{flex: 5, marginTop: 40}}>
-                            <RefinementMenu project={project}
-                                            steps={steps}
-                                            setSteps={setSteps}
-                                            selectedStep={selectedStep}
-                                            setSelectedStep={setSelectedStep}
-                                            currentStepText={currentStepText}
-                                            currentStepIndex={currentVersionIndex}
-                                            setCurrentVersionIndex={setCurrentVersionIndex}
-                                            setLoadingStep={setLoadingStep}
+                        <Box style={{flex: 5, marginTop: 40,
+                            // overflowY: 'auto',
+                            height: '100%',
+                        }}>
+                            <RefinementMenu selectedStep={selectedStep}
                                             contextMenuRef={contextMenuRef}
                                             menuSecondTitle={menuSecondTitle}
-                                            setMenuSecondTitle={setMenuSecondTitle}
-                                            onRemoveStep={removeStep}
                                             selectedMenuItem={selectedMenuItem}
-                                            setSelectedMenuItem={setSelectedMenuItem}
+                                            onRewrite={rewrite}
+                                            onEmotion={handleEmotion}
+                                            onQuestion={handleQuestion}
+                                            onCritique={handleCritique}
+                                            onAnalysis={handleAnalysis}
                             />
-
-                            <RefinementMenuCards project={project}
-                                                 steps={steps}
-                                                 setSteps={setSteps}
-                                                 selectedStep={selectedStep}
-                                                 setSelectedStep={setSelectedStep}
-                                                 currentStepIndex={currentStepIndex}
-                                                 currentVersionIndex={currentVersionIndex}
-                                                 impulseStage={selectedStep?.impulseStage}
-                                                 impulses={selectedStep?.impulses}
-                                                 loadingMenu={loadingMenu}
+                            <Box style={{
+                                // flex: 5,
+                                marginTop: 10,
+                                overflowY: 'auto', height: '100%'
+                            }}>
+                            <RefinementMenuCards selectedStep={selectedStep}
                                                  selectedMenuItem={selectedMenuItem}
                                                  menuWidth={menuWidth}
                                                  rephrasedSentence={rephrasedSentence}
                                                  extendedSentence={extendedSentence}
                                                  sentenceCritique={sentenceCritique}
-                                                 highlightedText={highlightedText}
                                                  onGoToStoryBeat={(stepIndex) => goToStoryBeat(stepIndex)}
+                                                 onAddSentence={(extend) => addSentenceToStepText(extend)}
                             />
+                            </Box>
                         </Box>
                     </Box>
 
@@ -420,20 +672,18 @@ const Refinement = () => {
                     />
 
                     {/* Right */}
-                    <AddStepConnector onClick={() => addStep(currentStepIndex + 1)}/>
-
-                    {currentStepIndex < steps.length &&
                         <Box sx={{
                             flex: 1,
                             flexDirection: 'row',
                             display: 'flex',
+                            mt: 5,
+                            height: `554px`,
+                            justifyContent: 'center'
                         }}>
-                            <RefinementSideCard onClick={handleNext}
-                                                index={currentStepIndex + 1}
-                                                text={steps[currentStepIndex + 1]?.text}
-                                                tooltip="Select next story beat"/>
+                            {currentStepIndex < (steps.length - 1) &&
+                                <NavigateToStepCard onClick={handleNext} position={'right'}/>
+                            }
                         </Box>
-                    }
                 </>
                 : <Skeleton/>
             }

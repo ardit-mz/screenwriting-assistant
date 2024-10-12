@@ -36,7 +36,12 @@ export async function getOpenAIRes(prompt: string, sysmsg: string, res_format?: 
         response_format: res_format
     }
 
-    const chatCompletion = await client(apiKey!).beta.chat.completions.parse(params);
+    const chatCompletion = await client(apiKey!).beta.chat.completions.parse(params)
+        .catch(async (err) => {
+            if (err instanceof OpenAI.APIError) {
+                return err.status;
+            }
+    });
     console.log("openaiService getOpenAIRes", chatCompletion);
     return chatCompletion;
 }

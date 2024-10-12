@@ -110,9 +110,9 @@ interface QuestionCardProps {
 }
 
 const QuestionCard: React.FC<QuestionCardProps> = ({questions, onClick}) => {
-    const [expandedQuestionsRaised, setExpandedQuestionsRaised] = useState(false);
-    const [expandedAnsweredQuestions, setExpandedAnsweredQuestions] = useState(false);
-    const [expandedUnansweredQuestions, setExpandedUnansweredQuestions] = useState(false);
+    const [expandedQuestionsRaised, setExpandedQuestionsRaised] = useState(true);
+    const [expandedAnsweredQuestions, setExpandedAnsweredQuestions] = useState(true);
+    const [expandedUnansweredQuestions, setExpandedUnansweredQuestions] = useState(true);
 
     const questionsRaisedTitle = "Questions raised by this story beat";
     const answeredQuestionsTitle = "Questions answered by this story beat";
@@ -124,50 +124,63 @@ const QuestionCard: React.FC<QuestionCardProps> = ({questions, onClick}) => {
 
     return (
         <Box sx={{mt: 2, marginLeft: 4}}>
-            {questions.questions_raised && questions.questions_raised.length > 0 && <>
-                <Header onClick={() => setExpandedQuestionsRaised(!expandedQuestionsRaised)}
-                        title={questionsRaisedTitle}/>
-                <Collapse in={expandedQuestionsRaised} timeout="auto" unmountOnExit>
-                    {questions.questions_raised.map(raised => {
-                            const index = raised.other_index ? raised.other_index - 1 : 0;
-                            return (
-                            <RaisedQuestionCard key={raised.id}
-                                                onClick={() => handleClick(index)}
-                                                index={index}
-                                                question={raised.question}
-                                                answer={raised.answer ?? ""}/>)
-                        }
-                    )}
-                </Collapse>
-            </>}
+            {questions.questions_raised && questions.questions_raised.length > 0
+                ? <>
+                    <Header onClick={() => setExpandedQuestionsRaised(!expandedQuestionsRaised)}
+                            title={questionsRaisedTitle}/>
+                    <Collapse in={expandedQuestionsRaised} timeout="auto" unmountOnExit>
+                        {questions.questions_raised.map((raised, idx) => {
+                                const index = raised.other_index ? raised.other_index - 1 : 0;
+                                return (
+                                    <RaisedQuestionCard key={`raised-${raised.id}-${idx}`}
+                                                        onClick={() => handleClick(index)}
+                                                        index={index}
+                                                        question={raised.question}
+                                                        answer={raised.answer ?? ""}/>)
+                            }
+                        )}
+                    </Collapse>
+                </>
+                :
+                <Typography align={"left"} fontWeight={"bold"} component='div' sx={{mt: 2}}>This story beat does not answer raised questions questions for this story beat</Typography>
+            }
 
-            {questions.questions_answered && questions.questions_answered.length > 0 && <>
-                <Header onClick={() => setExpandedAnsweredQuestions(!expandedAnsweredQuestions)}
-                        title={answeredQuestionsTitle}/>
-                <Collapse in={expandedAnsweredQuestions} timeout="auto" unmountOnExit>
-                    {questions.questions_answered.map(answered => {
-                        const index = answered.other_index ? answered.other_index - 1 : 0;
-                        return (
-                            <AnsweredQuestionCard key={answered.id}
-                                                  onClick={() => handleClick(index)}
-                                                  index={index}
-                                                  question={answered.question}
-                                                  answer={answered.answer ?? ""}/>)
-                        }
-                    )}
-                </Collapse>
-            </>}
+            {questions.questions_answered && questions.questions_answered.length > 0
+                ? <>
+                    <Header onClick={() => setExpandedAnsweredQuestions(!expandedAnsweredQuestions)}
+                            title={answeredQuestionsTitle}/>
+                    <Collapse in={expandedAnsweredQuestions} timeout="auto" unmountOnExit>
+                        {questions.questions_answered.map((answered, idx) => {
+                                const index = answered.other_index ? answered.other_index - 1 : 0;
+                                return (
+                                    <AnsweredQuestionCard key={`answered-${answered.id}-${idx}`}
+                                                          onClick={() => handleClick(index)}
+                                                          index={index}
+                                                          question={answered.question}
+                                                          answer={answered.answer ?? ""}/>)
+                            }
+                        )}
+                    </Collapse>
+                </>
+                :
+                <Typography align={"left"} fontWeight={"bold"} component='div' sx={{mt: 2}}>This story beat does not answer raised questions questions for this story beat</Typography>
+            }
 
-            {questions.questions_unanswered && questions.questions_unanswered.length > 0 && <>
-                <Header onClick={() => setExpandedUnansweredQuestions(!expandedUnansweredQuestions)}
-                        title={unansweredQuestionsTitle}/>
-                <Collapse in={expandedUnansweredQuestions} timeout="auto" unmountOnExit>
-                    {questions.questions_unanswered.map(unanswered =>
-                        <UnansweredQuestionCard key={unanswered.id}
-                                                question={unanswered.question}/>
-                    )}
-                </Collapse>
-            </>}
+            {questions.questions_unanswered && questions.questions_unanswered.length > 0
+                ? <>
+                    <Header onClick={() => setExpandedUnansweredQuestions(!expandedUnansweredQuestions)}
+                            title={unansweredQuestionsTitle}/>
+                    <Collapse in={expandedUnansweredQuestions} timeout="auto" unmountOnExit>
+                        {questions.questions_unanswered.map((unanswered, idx) =>
+                            <UnansweredQuestionCard key={`unanswered-${unanswered.id}-${idx}`}
+                                                    question={unanswered.question}/>
+                        )}
+                    </Collapse>
+                </>
+                : <Card sx={{backgroundColor: 'white', mt: 2, p:1, border: 'solid ' + SwaColor.orangeLight, boxShadow: 'none'}}>
+                    <Typography align={"left"} color={SwaColor.primaryLight} component='div'>There are no unanswered questions raised by this story beat</Typography>
+                </Card>
+            }
         </Box>
     )
 }

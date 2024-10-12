@@ -11,7 +11,7 @@ interface ContextMenuProps {
 
 const ContextMenu = React.forwardRef<HTMLDivElement, ContextMenuProps>(
     ({ children, secondTitle, style }, ref) => {
-        const [expanded, setExpanded] = useState(false);
+        const [expanded, setExpanded] = useState(true);
         const [selectedItem, setSelectedItem] = useState<string | null>(null);
         const menuTitle = "ASK THE ASSISTANT";
 
@@ -22,7 +22,6 @@ const ContextMenu = React.forwardRef<HTMLDivElement, ContextMenuProps>(
         };
 
         const handleItemSelect = (itemName: string) => {
-            console.log("handleItemSelect", itemName)
             setSelectedItem(itemName);
             // setExpanded(false);
         };

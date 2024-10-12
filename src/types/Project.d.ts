@@ -7,9 +7,11 @@ export type Project = {
     name: string;
     projectStage: ProjectStage;
     brainstorm: string;
+    brainstormChanged: boolean;
     script: Script | undefined;
     storyBeats: StoryBeat[];
     storyBeatOfWhichTheQuestionsShouldBeDisplayed?: StoryBeat;
     suggestions?: string[];
+    suggestionsLoaded?: boolean;
     uploadedText?: string;
 }

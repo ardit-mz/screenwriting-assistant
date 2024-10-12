@@ -1,5 +1,3 @@
-// components/SwaMiniDrawer.tsx
-
 import React, {useEffect} from 'react';
 import CssBaseline from '@mui/material/CssBaseline';
 import Box from '@mui/material/Box';
@@ -10,12 +8,11 @@ import AppBar from './SAppBar.tsx';
 import SDrawer from './SDrawer.tsx';
 import DrawerItems from './SDrawerItems.tsx';
 import SwaStepper from "../stepper/SwaStepper.tsx";
-import Brainstorming from "../../views/Brainstorming.tsx";
 import Export from "../../views/Export.tsx";
 import Refinement from "../../views/Refinement.tsx";
 import ViewSidebarOutlinedIcon from '@mui/icons-material/ViewSidebarOutlined';
 import ViewSidebarIcon from '@mui/icons-material/ViewSidebar';
-import {Navigate, Route, Routes, useNavigate} from "react-router-dom";
+import {Navigate, Route, Routes, useLocation, useNavigate} from "react-router-dom";
 import Structure from "../../views/Structure.tsx";
 import {ScreenNames} from "../../enum/ScreenNames.ts";
 import {useSelector} from "react-redux";
@@ -28,26 +25,23 @@ import ButtonsHeader from "../button/ButtonsHeader.tsx";
 import ButtonsHeaderSkeleton from "../skeleton/ButtonsHeaderSkeleton.tsx";
 import {SwaColor} from "../../enum/SwaColor.ts";
 import {selectOpenRight} from "../../features/drawer/DrawerSlice.ts";
-
+import About from "../../views/About.tsx";
+import Brainstorming from "../../views/Brainstorming.tsx";
 
 const MiniDrawer: React.FC = () => {
+    const location = useLocation();
     const projects = useSelector(selectProjects)
     const project = useSelector(selectCurrentProject);
     const mode = useSelector(selectMode)
-    //const dispatch = useDispatch<AppDispatch>();
-    //const theme = useTheme();
+    const blur = useSelector(selectBlur);
+    const isOpenRight = useSelector(selectOpenRight);
     const navigate = useNavigate();
-    // const dispatch = useDispatch<AppDispatch>();
+    const tmpTitle = 'wr-AI-ter';
 
     const [open, setOpen] = React.useState(false);
     const [openRight, setOpenRight] = React.useState(false);
     const [activeStep, setActiveStep] = React.useState(0);
     const [completed] = React.useState<{ [k: number]: boolean }>({});
-    const tmpTitle = 'Screenwriting Assistant';
-    const blur = useSelector(selectBlur);
-    const isOpenRight = useSelector(selectOpenRight);
-
-    // const [toggleDarkMode, setToggleDarkMode] = React.useState(true);
 
     const theme = createTheme({
         palette: {
@@ -275,12 +269,12 @@ const MiniDrawer: React.FC = () => {
     });
 
     useEffect(() => {
-        if (project) {
+        if (project && location.pathname !== ScreenNames.ABOUT) {
+        // if (project) {
             setActiveStep(getIndex(project.projectStage));
             navigate(getPathForStage(project.projectStage));
-
         }
-    }, [project, project?.projectStage, navigate]);
+    }, [project, project?.projectStage, navigate, location.pathname]);
 
     useEffect(() => {
         if (projects.length === 0) {
@@ -293,6 +287,12 @@ const MiniDrawer: React.FC = () => {
             setOpenRight(true);
         }
     }, [isOpenRight]);
+
+    useEffect(() => {
+        if (open && project?.projectStage === ProjectStage.STRUCTURE) {
+            setOpen(false)
+        }
+    }, [project?.projectStage]);
 
     function getIndex(stage: string) {
         switch (stage) {
@@ -324,14 +324,6 @@ const MiniDrawer: React.FC = () => {
         }
     }
 
-    // const handleDrawerOpen = () => {
-    //     setOpen(true);
-    // };
-    //
-    // const handleDrawerClose = () => {
-    //     setOpen(false);
-    // };
-
     const handleStepChange = (step: number) => {
         if (projects.length === 0) return
         setActiveStep(step);
@@ -353,17 +345,9 @@ const MiniDrawer: React.FC = () => {
         }
     };
 
-    // const toggleDarkTheme = () => {
-    //     // setToggleDarkMode(!toggleDarkMode);
-    //     dispatch(handleChangeMode(!mode))
-    // };
-
-    //console.log("MiniDrawer 0 projects", projects)
-    //console.log("MiniDrawer 0 project", project)
-
     return (
         <ThemeProvider theme={theme}>
-            <Box>
+            <Box sx={{display: 'flex'}}>
                 <CssBaseline/>
 
                 <AppBar position="fixed"
@@ -381,7 +365,6 @@ const MiniDrawer: React.FC = () => {
                             color="inherit"
                             aria-label="open drawer"
                             onClick={() => setOpen(!open)}
-                            // onClick={handleDrawerOpen}
                             edge="start"
                             style={{marginTop: 49}}
                         >
@@ -409,23 +392,35 @@ const MiniDrawer: React.FC = () => {
                             </IconButton>
                             : <Box sx={{minWidth: 28}}></Box>}
                     </Toolbar>
-
-
                 </AppBar>
 
                 <SDrawer variant="permanent" open={open}>
-                    <div className={blur ? 'blur-background' : ''}>
+                    <div className={blur ? 'blur-background' : ''} style={{height: '100%'}} >
                         <DrawerItems open={open} items={projects}/>
                     </div>
                 </SDrawer>
 
-                <Box sx={{flexGrow: 1, p: 3, mt: 10, width: '100%'}} className={blur ? 'blur-background' : ''}>
+                <Box sx={{flexGrow: 1, p: 3, mt: 10, width: '100%',
+                    // height: '100vh',
+                    height: 'calc(100vh - 192px)'
+                }} className={blur ? 'blur-background' : ''}>
                     <Routes>
-                        <Route path={ScreenNames.BRAINSTORMING} element={<Brainstorming/>}/>
-                        <Route path={ScreenNames.STRUCTURE} element={<Structure/>}/>
-                        <Route path={ScreenNames.REFINEMENT} element={<Refinement/>}/>
-                        <Route path={ScreenNames.EXPORT} element={<Export/>}/>
-                        <Route path="*" element={<Navigate to={ScreenNames.BRAINSTORMING} />} />
+                        <Route path="*" element={<Brainstorming />} />
+                        <Route path={ScreenNames.ABOUT} element={<About />} />
+
+                        {!!projects && projects.length > 0 ? (
+                            <>
+                                <Route path={ScreenNames.STRUCTURE} element={<Structure />} />
+                                <Route path={ScreenNames.REFINEMENT} element={<Refinement />} />
+                                <Route path={ScreenNames.EXPORT} element={<Export />} />
+                            </>
+                        ) : (
+                            <>
+                                <Route path={ScreenNames.STRUCTURE} element={<Navigate to="/" />} />
+                                <Route path={ScreenNames.REFINEMENT} element={<Navigate to="/" />} />
+                                <Route path={ScreenNames.EXPORT} element={<Navigate to="/" />} />
+                            </>
+                        )}
                     </Routes>
                 </Box>
 

@@ -1,15 +1,10 @@
-// views/Structure.tsx
-
 import {Snackbar, SnackbarContent, Stepper} from "@mui/material";
 import {useEffect, useRef, useState} from "react";
 import {useDispatch, useSelector} from "react-redux";
 import {AppDispatch} from "../store.ts";
-import {selectCurrentProject, selectLoading, setLoading, updateProject} from "../features/project/ProjectSlice.ts";
+import {selectCurrentProject, setLoading, updateProject} from "../features/project/ProjectSlice.ts";
 import {ProjectStage} from "../enum/ProjectStage.ts";
 import {getStoryBeatsFromBrainstorming} from "../api/openaiAPI.ts";
-import {ImpulseStage} from "../enum/ImpulseStage.ts";
-import {QuestionStage} from "../enum/QuestionStage.ts";
-import {UniversalEmotionStage} from "../enum/UniversalEmotionStage.ts";
 import {StoryBeat} from "../types/StoryBeat";
 import {v4 as uuidv4} from "uuid";
 import SwaStep from "../components/stepper/SwaStep.tsx";
@@ -20,19 +15,21 @@ import {SortableContext, arrayMove, horizontalListSortingStrategy} from "@dnd-ki
 import {SwaColor} from "../enum/SwaColor.ts";
 import {selectDndOptionShown, setDndOptionShown} from "../features/snackbar/SnackbarSlice.ts";
 import {selectApiKey} from "../features/model/ModelSlice.ts";
+import {MenuCardStage} from "../enum/MenuCardStage.ts";
+import {selectDialogError, showDialogError} from "../features/drawer/DrawerSlice.ts";
+import {debounce} from "../helper/DebounceHelper.ts";
 
 const Structure = () => {
     const dispatch = useDispatch<AppDispatch>();
     const project = useSelector(selectCurrentProject)
-    const isLoading = useSelector(selectLoading);
     const dndOptionShown = useSelector(selectDndOptionShown);
     const apiKey = useSelector(selectApiKey);
+    const scrollContainerRef = useRef(null);
+    const dialogError = useSelector(selectDialogError)
 
     const [steps, setSteps] = useState(project?.storyBeats);
-    const scrollContainerRef = useRef(null);
     const [focusedIndex, setFocusedIndex] = useState<number | null>(null);
     const [showSnackbar, setShowSnackbar] = useState(false);
-
 
     const handleFirstClick = () => {
         if (!dndOptionShown) {
@@ -81,20 +78,20 @@ const Structure = () => {
         const actList = await updateStoryBeats() ?? [];
         const updatedProject: Project = {
             ...project,
-            storyBeats: actList
+            storyBeats: actList,
+            brainstormChanged: false,
         };
 
-        dispatch(updateProject(updatedProject))
+        dispatch(updateProject(updatedProject));
         dispatch(setLoading(false));
     }
 
-    useEffect(() => {
-        if (!!project?.storyBeats && project.storyBeats.length > 0) {
-            return;
-        }
+    const debouncedHandleStoryBeats = useRef(debounce(handleStoryBeats, 300));
 
-        if (!!project && project.projectStage === ProjectStage.STRUCTURE && !!project.brainstorm) {
-            handleStoryBeats();
+    useEffect(() => {
+        if (project?.projectStage === ProjectStage.STRUCTURE && !!project.brainstorm && project.brainstormChanged) {
+            // handleStoryBeats();
+            debouncedHandleStoryBeats.current();
         }
     }, [project?.brainstorm]);
 
@@ -112,11 +109,13 @@ const Structure = () => {
             brainstormingPrompt += `Also here are some more ideas for reference for style:\\n\\${project.uploadedText}\\n`;
         }
         const res = await getStoryBeatsFromBrainstorming(brainstormingPrompt, apiKey);
+        if (res === 401) { dispatch(showDialogError(true)) }
 
         if (res) {
+            if (dialogError) dispatch(showDialogError(false));
+
             // @ts-expect-error has this format
             const acts = res?.choices[0]?.message?.parsed?.story_beats;
-            console.log("acts", acts)
             const actsList: StoryBeat[] = []
 
             acts?.forEach((act: string, index: number) => {
@@ -127,20 +126,22 @@ const Structure = () => {
                     locked: false,
                     index: index,
                     impulses: [],
-                    impulseStage: ImpulseStage.UNINITIALIZED,
+                    impulseStage: MenuCardStage.UNINITIALIZED,
                     questions: undefined,
-                    questionStage: QuestionStage.UNINITIALIZED,
-                    universalEmotion: undefined,
-                    universalEmotionStage: UniversalEmotionStage.UNINITIALIZED,
+                    questionStage: MenuCardStage.UNINITIALIZED,
+                    emotion: undefined,
+                    emotionStage: MenuCardStage.UNINITIALIZED,
                     versions: [{id: id, text: act}],
                     project: project,
                     analysis: undefined,
+                    analysisStage: MenuCardStage.UNINITIALIZED,
                     critique: undefined,
+                    critiqueStage: MenuCardStage.UNINITIALIZED,
                 }
                 actsList.push(newStoryBeat);
             })
 
-            return actsList
+            return actsList;
         }
     }
 
@@ -174,17 +175,7 @@ const Structure = () => {
         }
     };
 
-
-    console.log("isLoading", isLoading)
-
     return (<>{
-            // isLoading
-            //     ? <Stepper sx={{width: '100%', alignItems: 'flex-start'}}>
-            //         {Array(5).fill(null).map((_, index) => (
-            //             <SwaStepSkeleton key={index} showIcon={0 < index && index < 4}/>
-            //         ))}
-            //     </Stepper>
-            //     :
         !!steps && steps.length > 0
             ?
             <div onFocus={handleFirstClick}>

@@ -1,6 +1,7 @@
 export enum SwaColor {
     white = '#FFFFFF',
     grey = '#F5F5F5',
+    greyLighter = '#F6F5F5',
     primary = '#1E1E1E',
     primaryLight2 = '#3E3E3E',
     primaryLight = '#5E5E5E',
@@ -23,4 +24,5 @@ export enum SwaColor {
     violetLight =  '#F4E5FC',
     yellowLight =  '#F9FCD7',
     greenLighter =  '#D1F5EA',
+    error = '#B43F3F',
 }

@@ -10,7 +10,7 @@ interface AddSuggestionButtonProps {
 
 const AddSuggestionButton: React.FC<AddSuggestionButtonProps> = ({onClick}) => {
     return(
-        <Tooltip title="Add suggestion" placement="right">
+        <Tooltip title="Add and replace" placement="right">
             <IconButton onClick={onClick} sx={{padding:0, margin: 0}}>
                 <AddBoxOutlinedIcon sx={{ '&:hover': {color: SwaColor.primary } }} />
             </IconButton>
