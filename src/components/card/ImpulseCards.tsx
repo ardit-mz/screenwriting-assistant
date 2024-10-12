@@ -1,14 +1,14 @@
 import React from "react";
-import {ImpulseStage} from "../../enum/ImpulseStage.ts";
 import ImpulseSkeleton from "../skeleton/ImpulseSkeleton.tsx";
 import {v4 as uuidv4} from "uuid";
 import {Button, Skeleton} from "@mui/material";
 import ImpulseCard from "./ImpulseCard.tsx";
 import Box from "@mui/material/Box";
+import {MenuCardStage} from "../../enum/MenuCardStage.ts";
 
 interface ImpulseCardsProps {
     impulses: string[];
-    impulseStage: ImpulseStage;
+    impulseStage: MenuCardStage;
     handleAdd: (impulse: string) => void;
     handleRewrite: (impulseIndex: number, impulse: string) => void;
     handleDelete: (impulseIndex: number) => void;
@@ -21,7 +21,7 @@ interface ImpulseCardsProps {
 const ImpulseCards: React.FC<ImpulseCardsProps> = ({ impulses, impulseStage, handleAdd, handleRewrite, handleDelete, handleMore, loadImpulse, width, loading}) => {
 
     return (<>{
-        (loading || impulseStage === ImpulseStage.LOADING)
+        (loading || impulseStage === MenuCardStage.LOADING)
             ? <> {Array(3).fill(null).map(() => (
                 <ImpulseSkeleton key={uuidv4()} style={{marginLeft: 32}} width={width}/>))}
                 <Skeleton variant="rounded" width={width} height={36}
@@ -30,7 +30,7 @@ const ImpulseCards: React.FC<ImpulseCardsProps> = ({ impulses, impulseStage, han
 
             </>
 
-            : (impulseStage === ImpulseStage.SHOWN)
+            : (impulseStage === MenuCardStage.SHOWN)
             && <>
                 {impulses.map((impulse, indexImpulseCard) =>
                     <ImpulseCard key={`${impulse}-${indexImpulseCard}`}

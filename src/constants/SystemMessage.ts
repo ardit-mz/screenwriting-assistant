@@ -28,6 +28,16 @@ Convert the unstructured brainstorming session into a story beat structure that 
 - Present your answer in the order from 1 to 5.
 `;
 
+export const REWRITE_STORY_BEATS = `
+You are a professional screenwriter. Your task is to convert the unstructured brainstorming session into a coherent story beat structure that aligns with a five-act structure for creating a first draft of the story.
+- Review the provided brainstorming session and story beats carefully.
+- Maintain the wording and content of any "locked" story beats exactly as they are, treating them as established cornerstones of the story. Do not change the "locked" story beats.
+- For any story beats that are not locked, take creative liberties to rewrite and enhance them based on the ideas from the brainstorming session, ensuring the story remains cohesive and engaging.
+- If no story beats are provided, organize the brainstorming session into a chronological order suitable for a five-act structure.
+
+Remember to adhere to the "show, don't tell" principle and prioritize using all creative material provided.
+`;
+
 export const IMPULSE = `
 # Role
 You are an expert screenwriter. I am an expert screenwriter, too. We are both sitting in a writers room.
@@ -197,21 +207,21 @@ Only reply with a single code block:
 
 export const STORYBEATS_TREATMENT = `
 # Role
-You're an expert screenwriter. And you have been hired to write a treatment for a movie. I am the producer and I will give you the storybeats, I also am highly experienced in writing screenplays.
+You're an expert screenwriter. And you have been hired to write a treatment for a movie. I am the producer and I will give you the screenplay draft, I also am highly experienced in writing screenplays.
 
 # Goal
-Write a treatment for the storybeats i give you.
+Write a treatment for the screenplay draft i give you.
 
 # Approach
 1. Take a deep breath and relax.
-2. Read the storybeats.
-3. Transform the story beats into a professional treatment by also fleshing out the story where more details are necessary.
+2. Read the screenplay draft.
+3. Transform the screenplay draft into a professional treatment by also fleshing out the story where more details are necessary.
 
 # Guidlines
 - Apple the "show, dont tell" principle
 - make the concept and premise super clear
 - provide strong character descriptions
-- Stick to the facts provided in the story beats. Dont invent new story elements, however you can flesh exsiting ideas out.
+- Stick to the facts provided in the screenplay draft. Dont invent new story elements, however you can flesh existing ideas out.
 
 
 Reply in markdown format and make headings where appropriate:

@@ -48,26 +48,25 @@ const RightDrawerItems: React.FC = () => {
         <Box sx={{display: 'flex', flexDirection: 'column', justifyContent: 'space-between', height: '100%'}}>
             <Box sx={{
                 width: '100%',
-                marginTop: 17,
+                mt: 17,
                 display: 'flex',
                 flexDirection: 'column',
                 flexGrow: 1,
                 overflowY: 'auto'
             }}>
-                {(!!project?.suggestions && project?.suggestions.length > 0)
-                    ? (!!project?.suggestions && project.suggestions.map((suggestion, index) =>
+                {(!!suggestions && suggestions.length > 0)
+                    ? (!!suggestions && suggestions.map((suggestion, index) =>
                         <RightDrawerSuggestionCard key={index}
                                                    text={suggestion}
                                                    onChange={(text) => handleChange(index, text)}
                                                    onClick={() => handleAddSuggestion(suggestion)}/>
                     ))
                     // eslint-disable-next-line @typescript-eslint/no-unused-vars
-                    : Array(3).fill(null).map((_) => (
-                        <Skeleton variant="rectangular" height={100} sx={{mt: 2}}/>
+                    : Array(3).fill(null).map((_, index) => (
+                        <Skeleton key={index} variant="rectangular" height={100} sx={{mt: 2}}/>
                     ))
                 }
             </Box>
-
 
             <BrainstormingCard/>
         </Box>

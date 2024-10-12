@@ -5,7 +5,7 @@ const ExportSkeleton = () => {
     const NUM_LINES = 28;
 
     return (
-        <Box sx={{ display: 'flex', flexDirection: 'row', height: '100vh', width: '100%'}}>
+        <Box sx={{ display: 'flex', flexDirection: 'row', height: 'calc(100vh - 192px)', width: '100%'}}>
             <Box sx={{ width: '100%', overflowY: 'auto', flex: 3, marginRight: 2, '&::-webkit-scrollbar': { display: 'none' } }}>
                 <Box sx={{ display: 'flex', flexDirection: 'row', justifyContent: "space-between", alignItems: "center"}}>
                     <Skeleton variant="rectangular" width={70} height={24}/>

@@ -1,14 +1,13 @@
-import React, {useState} from "react";
+import React, {useEffect, useRef, useState} from "react";
 import {Button, Skeleton, Step, StepLabel, TextField, Tooltip} from "@mui/material";
 import {CSS} from '@dnd-kit/utilities';
 import SwaStepIcon from "../../icons/SwaStepIcon.tsx";
 import SwaStepButton from "./SwaStepButton.tsx";
 import RefreshOutlinedIcon from "@mui/icons-material/RefreshOutlined";
 import LockIcon from "@mui/icons-material/Lock";
-import LockOutlinedIcon from "@mui/icons-material/LockOutlined";
+import LockOpenIcon from '@mui/icons-material/LockOpen';
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import ArrowForwardIcon from "@mui/icons-material/ArrowForward";
-import {ImpulseStage} from "../../enum/ImpulseStage.ts";
 import AddStepConnector from "./SwaStepConnector.tsx";
 import {StoryBeat} from "../../types/StoryBeat";
 import {useDispatch, useSelector} from "react-redux";
@@ -23,8 +22,6 @@ import ImpulseCard from "../card/ImpulseCard.tsx";
 import PaginationVersions from "../version/PaginationVersions.tsx";
 import DeleteIconButton from "../button/DeleteIconButton.tsx";
 import {v4 as uuidv4} from "uuid";
-import {QuestionStage} from "../../enum/QuestionStage.ts";
-import {UniversalEmotionStage} from "../../enum/UniversalEmotionStage.ts";
 import {getStoryBeatImpulse, rewriteStoryBeat, rewriteStoryBeatImpulse} from "../../api/openaiAPI.ts";
 import SwaStepSkeleton from "../skeleton/SwaStepSkeleton.tsx";
 import ImpulseSkeleton from "../skeleton/ImpulseSkeleton.tsx";
@@ -32,6 +29,8 @@ import {useSortable} from "@dnd-kit/sortable";
 import {selectApiKey} from "../../features/model/ModelSlice.ts";
 import DragIndicatorIcon from '@mui/icons-material/DragIndicator';
 import IconButton from "@mui/material/IconButton";
+import {MenuCardStage} from "../../enum/MenuCardStage.ts";
+import {showDialogError} from "../../features/drawer/DrawerSlice.ts";
 
 interface SwaStepProps {
     id: string;
@@ -49,6 +48,7 @@ const SwaStep: React.FC<SwaStepProps> = ({id, index, steps, setSteps, onBlur, on
     const project = useSelector(selectCurrentProject)
     const isLoading = useSelector(selectLoading);
     const apiKey = useSelector(selectApiKey);
+    const textFieldRef = useRef<HTMLDivElement>(null);
 
     const [completed] = useState<{ [k: number]: boolean }>({});
     // const [isLoadingImpulses, setIsLoadingImpulses] = useState<boolean>(false);
@@ -56,6 +56,7 @@ const SwaStep: React.FC<SwaStepProps> = ({id, index, steps, setSteps, onBlur, on
     const [rewriteImpulse, setRewriteImpulse] = useState<{ [k: number]: boolean }>({});
     const [currentVersionIndex, setCurrentVersionIndex] = useState(0);
     const [active, setActive] = useState<boolean>(false);
+    const [stepWidth, setStepWidth] = useState<number | string>('auto');
 
     const {attributes, listeners, setNodeRef, transform, transition} = useSortable({id});
 
@@ -63,6 +64,12 @@ const SwaStep: React.FC<SwaStepProps> = ({id, index, steps, setSteps, onBlur, on
         transform: CSS.Translate.toString(transform),
         transition,
     };
+
+    useEffect(() => {
+        if (textFieldRef.current) {
+            setStepWidth(textFieldRef.current.offsetWidth);
+        }
+    },[]);
 
     const handleFocus = () => {
         setActive(true);
@@ -92,40 +99,40 @@ const SwaStep: React.FC<SwaStepProps> = ({id, index, steps, setSteps, onBlur, on
 
         setRewritingStep(true);
 
-        console.log("steps text:", steps[index].text);
-        console.log("steps versions:", steps[index].versions);
-
         try {
             // TODO improve prompts
             const storyBeatsStr = "My story beats are:\\n" + project.storyBeats.map((s, i) => `${i + 1}: ${s.text}`).join('\n');
             const storyBeatPrompt = `The story beat I want you to rewrite is ${steps[index].text}`;
             const response = await rewriteStoryBeat(storyBeatsStr + storyBeatPrompt, apiKey);
-            const text = response?.choices[0]?.message?.content ?? "";
-            console.log("res text:", text);
 
-            const rewrittenStoryBeat = {
-                ...steps[index],
-                text: text,
-                versions: [
-                    ...(steps[index].versions || []),
-                    {id: uuidv4(), text: text},
-                ],
-            };
+            if (typeof response === 'number') {
+                if (response === 401) dispatch(showDialogError(true));
+            } else {
+                dispatch(showDialogError(false));
+                const text = response?.choices[0]?.message?.content ?? "";
 
-            const finalUpdatedSteps = steps.map((step, i) =>
-                i === index ? rewrittenStoryBeat : step
-            );
+                const rewrittenStoryBeat = {
+                    ...steps[index],
+                    text: text,
+                    versions: [
+                        ...(steps[index].versions || []),
+                        {id: uuidv4(), text: text},
+                    ],
+                };
 
-            console.log("finalUpdatedSteps:", finalUpdatedSteps);
+                const finalUpdatedSteps = steps.map((step, i) =>
+                    i === index ? rewrittenStoryBeat : step
+                );
 
-            setSteps(finalUpdatedSteps);
+                setSteps(finalUpdatedSteps);
 
-            dispatch(updateStoryBeat({
-                projectId: project.id,
-                storyBeat: rewrittenStoryBeat
-            }))
+                dispatch(updateStoryBeat({
+                    projectId: project.id,
+                    storyBeat: rewrittenStoryBeat
+                }))
 
-            setCurrentVersionIndex(steps[index].versions.length)
+                setCurrentVersionIndex(steps[index].versions.length)
+            }
         } catch (error) {
             console.error("Error fetching impulses for the new step:", error);
         }
@@ -235,15 +242,17 @@ const SwaStep: React.FC<SwaStepProps> = ({id, index, steps, setSteps, onBlur, on
             locked: false,
             index: index + 1,
             impulses: [],
-            impulseStage: ImpulseStage.LOADING,
+            impulseStage: MenuCardStage.LOADING,
             versions: [{id: id, text: ""}],
             questions: undefined,
-            questionStage: QuestionStage.UNINITIALIZED,
-            universalEmotion: undefined,
-            universalEmotionStage: UniversalEmotionStage.UNINITIALIZED,
+            questionStage: MenuCardStage.UNINITIALIZED,
+            emotion: undefined,
+            emotionStage: MenuCardStage.UNINITIALIZED,
             project: project,
             analysis: undefined,
+            analysisStage: MenuCardStage.UNINITIALIZED,
             critique: undefined,
+            critiqueStage: MenuCardStage.UNINITIALIZED,
         }
 
         const updatedSteps = [
@@ -264,17 +273,18 @@ const SwaStep: React.FC<SwaStepProps> = ({id, index, steps, setSteps, onBlur, on
             const storyBeatsStr = "My story beats are:\\n" + project.storyBeats.map((s, i) => `${i + 1}: ${s.text}`).join('\n');
             const storyBeatPrompt = `I need impulses just for the new story beat between the current story beats: ${previousStep?.index} and : ${nextStep?.index}`;
             const response = await getStoryBeatImpulse(storyBeatsStr + storyBeatPrompt, apiKey);
-            console.log("SwaStep addStep response", response);
 
+            if (response === 401) { dispatch(showDialogError(true));}
+            else {dispatch(showDialogError(false));}
             // @ts-expect-error It has this format
             const impulses = response?.choices[0]?.message?.parsed?.impulses || [];
 
             const updatedStoryBeat: StoryBeat = {
                 ...newStoryBeat,
                 impulses: impulses,
-                impulseStage: ImpulseStage.SHOWN,
-                questionStage: QuestionStage.HIDDEN,
-                universalEmotionStage: UniversalEmotionStage.HIDDEN
+                impulseStage: MenuCardStage.SHOWN,
+                questionStage: MenuCardStage.HIDDEN,
+                emotionStage: MenuCardStage.HIDDEN
             };
 
             const finalUpdatedSteps = [
@@ -310,7 +320,7 @@ const SwaStep: React.FC<SwaStepProps> = ({id, index, steps, setSteps, onBlur, on
         if (!steps) return;
 
         const updatedSteps = steps.map((step, i) =>
-            i === index ? {...step, text: impulse, impulses: [], impulseStage: ImpulseStage.HIDDEN} : step
+            i === index ? {...step, text: impulse, impulses: [], impulseStage: MenuCardStage.HIDDEN} : step
         );
         setSteps(updatedSteps);
 
@@ -324,7 +334,7 @@ const SwaStep: React.FC<SwaStepProps> = ({id, index, steps, setSteps, onBlur, on
 
     const handleRewriteImpulse = async (impulseIndex: number, impulse: string) => {
         if (!steps) return;
-        console.log("Steps", steps)
+
         setRewriteImpulse(prevImpulses => ({
             ...prevImpulses,
             [impulseIndex]: true,
@@ -332,38 +342,38 @@ const SwaStep: React.FC<SwaStepProps> = ({id, index, steps, setSteps, onBlur, on
 
         // TODO improve rewriteStoryBeatImpulse prompt
         const response = await rewriteStoryBeatImpulse(impulse, apiKey);
-        const newImpulse = response?.choices[0]?.message?.content ?? "";
-        console.log("newImpulse", newImpulse)
 
-        const updatedImpulses = [...steps[index].impulses];
-        updatedImpulses[impulseIndex] = newImpulse;
+        if (typeof response === 'number') {
+            if (response === 401) dispatch(showDialogError(true));
+        } else {
+            dispatch(showDialogError(false));
+            const newImpulse = response?.choices[0]?.message?.content ?? "";
 
-        const updatedSteps = steps.map((step, i) =>
-            i === index ? {...step, impulses: updatedImpulses} : step
-        );
+            const updatedImpulses = [...steps[index].impulses];
+            updatedImpulses[impulseIndex] = newImpulse;
 
-        console.log("updatedSteps", updatedSteps)
+            const updatedSteps = steps.map((step, i) =>
+                i === index ? {...step, impulses: updatedImpulses} : step
+            );
 
-        setSteps(updatedSteps);
+            setSteps(updatedSteps);
 
-        if (project && project.id) {
-            dispatch(updateStoryBeatImpulses({
-                projectId: project.id,
-                storyBeatId: steps[index].id,
-                impulses: updatedImpulses
+            if (project && project.id) {
+                dispatch(updateStoryBeatImpulses({
+                    projectId: project.id,
+                    storyBeatId: steps[index].id,
+                    impulses: updatedImpulses
+                }));
+            }
+
+            setRewriteImpulse(prevImpulses => ({
+                ...prevImpulses,
+                [impulseIndex]: false,
             }));
         }
-
-        setRewriteImpulse(prevImpulses => ({
-            ...prevImpulses,
-            [impulseIndex]: false,
-        }));
-        console.log("steps 2", steps)
-
     };
 
     const handleDeleteImpulse = (impulseIndex: number) => {
-        console.log("impulseIndex", impulseIndex)
         if (!steps || !steps[index]) return;
 
         const updatedImpulses = steps[index]?.impulses?.filter((_, i) => i !== impulseIndex) || [];
@@ -393,14 +403,16 @@ const SwaStep: React.FC<SwaStepProps> = ({id, index, steps, setSteps, onBlur, on
             const storyBeatPrompt = `I need more impulses for the current story beat between the story beats: ${previousStep?.index ?? ''} and ${nextStep?.index ?? ''}.\n`
             const storyBeatPrompt2 = `The impulses I have so far are ${steps[index].impulses.map((s, i) => `${i + 1}: ${s}`).join('\n')}`;
             const response = await getStoryBeatImpulse(storyBeatsStr + storyBeatPrompt + storyBeatPrompt2, apiKey);
-
+            if (response === 401) {
+                dispatch(showDialogError(true));
+            } else {dispatch(showDialogError(false));}
             // @ts-expect-error It has this format
             const newImpulses = response?.choices[0]?.message?.parsed?.impulses || [];
 
             const updatedStep = {
                 ...steps[index],
                 impulses: [...steps[index].impulses, ...newImpulses],
-                impulseStage: ImpulseStage.SHOWN,
+                impulseStage: MenuCardStage.SHOWN,
             };
 
             const finalUpdatedSteps = steps.map((step, i) =>
@@ -420,13 +432,11 @@ const SwaStep: React.FC<SwaStepProps> = ({id, index, steps, setSteps, onBlur, on
             console.error("Error fetching more impulses:", error);
         } finally {
             const finalSteps = steps.map((step, i) =>
-                i === index ? {...step, impulseStage: ImpulseStage.SHOWN} : step
+                i === index ? {...step, impulseStage: MenuCardStage.SHOWN} : step
             );
             setSteps(finalSteps);
         }
     }
-
-    // console.log("SwaStep steps", steps)
 
     return (<>{(rewritingStep || (isLoading && !steps[index].locked))
         ? <SwaStepSkeleton showIcon={0 < index && index < steps.length}/>
@@ -447,7 +457,7 @@ const SwaStep: React.FC<SwaStepProps> = ({id, index, steps, setSteps, onBlur, on
             <div style={{display: 'flex', flexDirection: 'row', justifyContent: 'space-between'}}>
                 <div style={{display: 'flex'}}>
                     <StepLabel icon={<SwaStepIcon index={index} active={active}/>}/>
-                    <SwaStepButton icon={steps[index].locked ? <LockIcon/> : <LockOutlinedIcon/>}
+                    <SwaStepButton icon={steps[index].locked ? <LockIcon/> : <LockOpenIcon/>}
                                    title={!steps[index].locked ? "Lock story beat so it cannot be changed or rewritten" : "Unlock this story beat so it can be changed or rewritten"}
                                    onClick={toggleLock}/>
                     <SwaStepButton icon={<RefreshOutlinedIcon/>}
@@ -475,7 +485,8 @@ const SwaStep: React.FC<SwaStepProps> = ({id, index, steps, setSteps, onBlur, on
                 </div>
             </div>
 
-            <TextField fullWidth
+            <TextField ref={textFieldRef}
+                       fullWidth
                        multiline
                        margin={"normal"}
                        variant='outlined'
@@ -494,11 +505,11 @@ const SwaStep: React.FC<SwaStepProps> = ({id, index, steps, setSteps, onBlur, on
                 <IconButton  {...listeners}> <DragIndicatorIcon style={{ transform: "rotate(90deg)"}} /> </IconButton>
             </Tooltip>
             {
-                steps[index]?.impulseStage === ImpulseStage.LOADING
+                steps[index]?.impulseStage === MenuCardStage.LOADING
                     ? <> {Array(3).fill(null).map(() => (<ImpulseSkeleton key={uuidv4()}/>))}
                         <Skeleton variant="rounded" width={266} height={36} style={{marginTop: 16, marginRight: 32}}/>
                     </>
-                    : (steps[index]?.impulseStage === ImpulseStage.SHOWN)
+                    : (steps[index]?.impulseStage === MenuCardStage.SHOWN)
                     && <>{steps[index]?.impulses.map((impulse, indexImpulseCard) =>
                         <ImpulseCard key={`${impulse}-${indexImpulseCard}`}
                                      impulse={impulse}
@@ -509,7 +520,7 @@ const SwaStep: React.FC<SwaStepProps> = ({id, index, steps, setSteps, onBlur, on
                                      loading={rewriteImpulse[indexImpulseCard] ?? false}
                         />
                     )}
-                        <Button onClick={moreImpulses} sx={{mt: 2, mr: 4}} variant="outlined">More</Button>
+                        <Button onClick={moreImpulses} sx={{mt: 2, mr: 4, width: stepWidth}} variant="outlined">More</Button>
                     </>
             }
         </div>

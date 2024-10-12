@@ -27,7 +27,7 @@ const ImpulseCard: React.FC<ImpulseCardProps> = ({impulse, index, handleAdd, han
                            multiline
                            margin={"normal"}
                            defaultValue={impulse}
-                           onChange={() => console.log("on change haskdj")}
+                           onChange={() => console.log("on change impulse")}
                            style={{
                                backgroundColor: index >2 ? SwaColor.lightestBlue : impulseBgc[index],
                                marginTop: 10,

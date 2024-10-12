@@ -15,9 +15,6 @@ export const useContextMenu = () => {
         const selection = window.getSelection();
         const selected = selection?.toString();
 
-        // console.log("Selection:", selection);
-        // console.log("Selected text:", selected);
-
         if (selected && selected.length > 0 && !!selection && textFieldRef?.contains(selection.anchorNode)) {
             setSelectedText(selected);
             setAnchorPosition({
@@ -25,7 +22,6 @@ export const useContextMenu = () => {
                 left: event.clientX //+ (window.scrollX/2)
             });
         } else {
-            // console.log("No valid selection or outside of TextField");
             setAnchorPosition(null);
             setSelectedText(null);
         }

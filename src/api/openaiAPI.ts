@@ -11,14 +11,14 @@ import {
     SUGGESTIONS,
     UNIVERSAL_EMOTION,
     UNIVERSAL_QUESTION,
-    CONSISTENCY_CHECK
+    CONSISTENCY_CHECK, REWRITE_STORY_BEATS
 } from "../constants/SystemMessage.ts";
 import {getOpenAIRes} from "../services/openaiService.ts";
 import {
     ANALYSIS_SCHEMA, CONSISTENCY_SCHEMA,
     CRITIQUE_SCHEMA,
     IMPULSES_SCHEMA,
-    QUESTIONS_SCHEMA,
+    QUESTIONS_SCHEMA, REWRITE_STORY_BEATS_SCHEMA,
     STORY_BEATS_SCHEMA,
     SUGGESTIONS_SCHEMA,
     UNIVERSAL_EMOTION_SCHEMA,
@@ -45,8 +45,8 @@ export function getStoryBeatsFromBrainstorming(prompt: string, apiKey: string) {
 }
 
 export function regenerateStoryBeats(prompt: string, apiKey: string) {
-    const res_format = zodResponseFormat(STORY_BEATS_SCHEMA, "story_beats")
-    const res = getOpenAIRes(prompt, STORY_BEATS, res_format, apiKey)
+    const res_format = zodResponseFormat(REWRITE_STORY_BEATS_SCHEMA, "story_beats")
+    const res = getOpenAIRes(prompt, REWRITE_STORY_BEATS, res_format, apiKey)
     console.log("openaiService regenerateStoryBeats", res);
     return res;
 }

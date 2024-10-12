@@ -10,7 +10,7 @@ interface CollapsableCardProps {
 }
 
 const CollapsableCard: React.FC<CollapsableCardProps> = ({title, text, color}) => {
-    const [expanded, setExpanded] = useState(false);
+    const [expanded, setExpanded] = useState(true);
 
     return (<>
         <ButtonBase onClick={() => setExpanded(!expanded)}

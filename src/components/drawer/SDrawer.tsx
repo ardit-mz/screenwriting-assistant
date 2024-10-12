@@ -2,10 +2,6 @@ import MuiDrawer from '@mui/material/Drawer';
 import {styled, Theme, CSSObject} from '@mui/material/styles';
 import {DRAWER_WIDTH} from "../../constants/UI.ts";
 
-// interface Prop {
-//   drawerWidth: number;
-// }
-
 const openedMixin = (theme: Theme): CSSObject => ({
     width: DRAWER_WIDTH,
     transition: theme.transitions.create('width', {
@@ -27,6 +23,7 @@ const closedMixin = (theme: Theme): CSSObject => ({
     },
 });
 
+
 const SDrawer = styled(MuiDrawer, {shouldForwardProp: (prop) => prop !== 'open'})(
     ({theme, open}) => ({
         width: DRAWER_WIDTH,
@@ -36,11 +33,15 @@ const SDrawer = styled(MuiDrawer, {shouldForwardProp: (prop) => prop !== 'open'}
         ...(open && {
             ...openedMixin(theme),
             '& .MuiDrawer-paper': openedMixin(theme),
+            "&.MuiDrawer-root": { width: 170},
         }),
         ...(!open && {
             ...closedMixin(theme),
             '& .MuiDrawer-paper': closedMixin(theme),
+            "&.MuiDrawer-root": { width: 0},
+
         }),
+
     }),
 );
 

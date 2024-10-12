@@ -38,7 +38,7 @@ const FloatingMenuAddCard: React.FC<FloatingMenuAddCardProps> = ({text, onClick,
                         marginLeft: 8,
                         marginRight: 8
                     }}>
-                        {[...new Array(3)].map(() => <Skeleton variant="text" sx={{fontSize: '16px'}}/>)}
+                        {[...new Array(3)].map((index) => <Skeleton key={index} variant="text" sx={{fontSize: '16px'}}/>)}
                     </div>
                     : <Typography style={{textAlign: 'left'}}>{text}</Typography>
                 }

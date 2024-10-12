@@ -9,6 +9,7 @@ import {selectCurrentProject, updateProject} from "../../features/project/Projec
 import {useDispatch, useSelector} from "react-redux";
 import {AppDispatch} from "../../store.ts";
 import {Script} from "../../types/Script";
+import {MenuCardStage} from "../../enum/MenuCardStage.ts";
 
 interface ScriptTextFieldProps {
     text: string;
@@ -27,6 +28,7 @@ const ScriptTextField = React.forwardRef<HTMLDivElement, ScriptTextFieldProps>(
         const [currentText, setCurrentText] = useState<string>(text);
         const [charCount, setCharCount] = useState<number>(0);
         const [wordCount, setWordCount] = useState<number>(0);
+        const [textChanged, setTextChanged] = useState<boolean>(false);
 
         useEffect(() => {
             if (text) {
@@ -41,11 +43,29 @@ const ScriptTextField = React.forwardRef<HTMLDivElement, ScriptTextFieldProps>(
                 setCurrentText(newText);
                 setCharCount(newText.length);
                 setWordCount(newText.trim().split(/\s+/).filter(Boolean).length);
+
+                if (!!project && !!project.script) {
+                    const updatedScript: Script = {
+                        ...project.script,
+                        critiqueStage: MenuCardStage.UNINITIALIZED,
+                        analysisStage: MenuCardStage.UNINITIALIZED,
+                        consistencyStage: MenuCardStage.UNINITIALIZED,
+                    };
+
+                    const updatedProject: Project = {
+                        ...project,
+                        script: updatedScript,
+                    };
+
+                    dispatch(updateProject(updatedProject))
+                }
             }
         }, [currentVersionIndex, versions]);
 
         const handleTextChange = (event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
             const newText = event.target.value;
+            const hasTextChanged = currentText.replace(/\s+/g, '') !== newText.replace(/\s+/g, '');
+            setTextChanged(hasTextChanged);
             setCurrentText(newText);
             setCharCount(newText.length);
             setWordCount(newText.trim().split(/\s+/).filter(Boolean).length);
@@ -62,6 +82,11 @@ const ScriptTextField = React.forwardRef<HTMLDivElement, ScriptTextFieldProps>(
                         ? { ...version, text: currentText }
                         : version
                 ),
+                critiqueStage: textChanged ? MenuCardStage.NEEDS_UPDATE : project.script.critiqueStage,
+                analysisStage: textChanged ? MenuCardStage.NEEDS_UPDATE : project.script.analysisStage,
+                consistencyStage: textChanged ? MenuCardStage.NEEDS_UPDATE : project.script.consistencyStage,
+                whoWroteWhatStage: textChanged ? MenuCardStage.NEEDS_UPDATE : project.script.whoWroteWhatStage,
+
             }
 
             const updatedProject: Project = {
@@ -120,7 +145,7 @@ const ScriptTextField = React.forwardRef<HTMLDivElement, ScriptTextFieldProps>(
                            sx={{
                                mt: 0,
                                mb: 0,
-                               '& .MuiOutlinedInput-root': {
+                               '& .MuiFilledInput-root': {
                                    '& fieldset': {
                                        border: 'none',
                                    },
@@ -132,7 +157,10 @@ const ScriptTextField = React.forwardRef<HTMLDivElement, ScriptTextFieldProps>(
                                    }
                                },
                            }}
-                           inputProps={{style: {color: SwaColor.primaryLighter}}}/>
+                           inputProps={{style: {
+                               // color: SwaColor.primaryLighter
+                                   color: SwaColor.primary
+                           }}}/>
                 </Box>
             </Box>
         )

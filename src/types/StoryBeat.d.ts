@@ -1,25 +1,26 @@
-import {QuestionStage} from "../enum/QuestionStage.ts";
-import {ImpulseStage} from "../enum/ImpulseStage.ts";
-import {UniversalEmotionStage} from "../enum/UniversalEmotionStage.ts";
 import {Project} from "./Project";
 import {Questions} from "./Question";
 import {Emotion} from "./Emotion";
 import {Critique} from "./Critique";
 import {Analysis} from "./Analysis";
+import {MenuCardStage} from "../enum/MenuCardStage.ts";
 
 export type StoryBeat = {
     id: string;
     text: string;
     locked: boolean;
     index: number;
-    impulses: string[];
-    impulseStage: ImpulseStage;
-    questions: Questions | undefined;
-    questionStage: QuestionStage;
-    universalEmotion: Emotion | undefined;
-    universalEmotionStage: UniversalEmotionStage;
     versions: { id: string; text: string}[];
+    impulses: string[];
+    impulseStage: MenuCardStage;
+    questions: Questions | undefined;
+    questionStage: MenuCardStage;
+    emotion: Emotion | undefined;
+    emotionStage: MenuCardStage;
     critique: Critique | undefined;
+    critiqueStage: MenuCardStage;
     analysis: Analysis | undefined;
+    analysisStage: MenuCardStage;
     project?: Project;
+    textUpdated?: boolean;
 }

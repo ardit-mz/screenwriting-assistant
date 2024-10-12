@@ -1,16 +1,15 @@
-// components/SDrawerItem.tsx
-
-import React, {useState} from 'react';
+import React, {useEffect, useState} from 'react';
 import ListItem from '@mui/material/ListItem';
 import ListItemButton from '@mui/material/ListItemButton';
 import ListItemIcon from '@mui/material/ListItemIcon';
-import {useDispatch} from "react-redux";
+import {useDispatch, useSelector} from "react-redux";
 import {AppDispatch } from "../../store.ts";
 import ListItemText from "@mui/material/ListItemText";
 import {handleBlurBackground} from "../../features/theme/ThemeSlice.ts";
 import ConfigurationDialog from "../dialog/ConfigurationDialog.tsx";
 import SettingsIcon from '@mui/icons-material/Settings';
 import {setModel} from "../../features/model/ModelSlice.ts";
+import {selectDialogError} from "../../features/drawer/DrawerSlice.ts";
 
 interface DrawerItemProps {
     open: boolean;
@@ -18,7 +17,15 @@ interface DrawerItemProps {
 
 const DrawerItem: React.FC<DrawerItemProps> = ({ open }) => {
     const dispatch = useDispatch<AppDispatch>();
+    const showDialogError = useSelector(selectDialogError);
     const [dialogOpen, setDialogOpen] = useState(false);
+
+    useEffect(() => {
+        if (showDialogError) {
+            setDialogOpen(true);
+            dispatch(handleBlurBackground(true))
+        }
+    }, [showDialogError]);
 
     const handleConfig = () => {
         setDialogOpen(true);
@@ -46,7 +53,6 @@ const DrawerItem: React.FC<DrawerItemProps> = ({ open }) => {
                     onClick={handleConfig}
                     sx={{ minHeight: 48, justifyContent: open ? 'initial' : 'center', px: 2.5 }}>
                     <ListItemIcon sx={{ minWidth: 0, mr: open ? 3 : 'auto', justifyContent: 'center' }}>
-                        {/*{open ? <SettingsOutlinedIcon/> : <SettingsIcon/>} TODO check if necessary */}
                         <SettingsIcon/>
                     </ListItemIcon>
                     <ListItemText primary={'Configuration'} sx={{ opacity: open ? 1 : 0 }} />
@@ -56,6 +62,7 @@ const DrawerItem: React.FC<DrawerItemProps> = ({ open }) => {
             <ConfigurationDialog open={dialogOpen}
                        onClose={handleClose}
                        onSave={handleSave}
+                        error={showDialogError}
             />
         </>
     );

@@ -24,11 +24,13 @@ const PaginationVersions: React.FC<PaginationVersionsProps> = ({ totalPages, cur
     return (
         <Box display="flex" alignItems="center" style={style}>
             <Tooltip title={"Go to previous version"} placement="top" arrow>
+                <span>
                 <IconButton onClick={(e) => handleVersionChange(e, currentVersion - 1)}
                         disabled={currentVersion === 1 || disabled}
                         sx={{height: 16, width: 16}} >
                     <ArrowBackIosNewIcon sx={{ ...iconSize, color: currentVersion === 1 ? "inherit" : SwaColor.primaryLighter2 }} />
                 </IconButton>
+                    </span>
             </Tooltip>
 
             <Typography sx={{mr:1, ml: 1}} color={SwaColor.primaryLighter2}>
@@ -36,11 +38,13 @@ const PaginationVersions: React.FC<PaginationVersionsProps> = ({ totalPages, cur
             </Typography>
 
             <Tooltip title={"Go to next version"} placement="top" arrow>
+                <span>
                 <IconButton onClick={(e) => handleVersionChange(e, currentVersion + 1)}
                             disabled={currentVersion === totalPages || disabled}
                             sx={{height: 16, width: 16}} >
                     <ArrowForwardIosIcon sx={{ ...iconSize, color: currentVersion === totalPages ? "inherit" : SwaColor.primaryLighter2 }} />
                 </IconButton>
+                    </span>
             </Tooltip>
         </Box>
     );

@@ -5,115 +5,99 @@ import AnalysisCard from "./AnalysisCard.tsx";
 import FloatingMenuAddCard from "./FloatingMenuAddCard.tsx";
 import FloatingMenuCard from "./FloatingMenuCard.tsx";
 import React from "react";
-import {updateProject} from "../../features/project/ProjectSlice.ts";
 import {Project} from "../../types/Project.ts";
-import {useDispatch} from "react-redux";
-import {AppDispatch} from "../../store.ts";
-import WhoWroteWhatCard from "./WhoWroteWhatCard.tsx";
+// import WhoWroteWhatCard from "./WhoWroteWhatCard.tsx";
 import {Script} from "../../types/Script";
 import ConsistencyAccordion from "../accordion/ConsistencyAccordion.tsx";
+import {MenuCardStage} from "../../enum/MenuCardStage.ts";
 
 interface CompletionMenuCardsProps {
     project: Project | null;
-    currentVersionIndex: number,
-    loadingMenu: boolean;
+    script: Script;
     selectedMenuItem: MenuItem | null,
     menuWidth: string | number,
     rephrasedSentence: string,
     extendedSentence: string,
     sentenceCritique: string,
-    highlightedText: string | null,
+    onAddSentence: (extend: boolean) => void;
+    // onClickConsistencyCheck: (index: number) => void;
 }
 
 const CompletionMenuCards: React.FC<CompletionMenuCardsProps> = ({
                                                                      project,
-                                                                     currentVersionIndex,
-                                                                     loadingMenu,
+                                                                     script,
                                                                      selectedMenuItem,
                                                                      menuWidth,
                                                                      rephrasedSentence,
                                                                      extendedSentence,
                                                                      sentenceCritique,
-                                                                     highlightedText,
+                                                                     onAddSentence,
+                                                                     // onClickConsistencyCheck,
                                                                  }) => {
-    const dispatch = useDispatch<AppDispatch>();
+    const isLoading = (stage: MenuCardStage) => stage === MenuCardStage.LOADING;
 
-    const addSentenceToStepText = (extend: boolean = false) => {
-        if (!project || !project.script || !highlightedText) return;
+    const isReadyToShow = (stage: MenuCardStage, data: boolean) =>
+        (stage === MenuCardStage.SHOWN || stage === MenuCardStage.NEEDS_UPDATE) && data;
 
-        console.log(loadingMenu); // TODO remove if not needed
-        console.log("highlightedText", highlightedText)
-        console.log("rephrasedSentence", rephrasedSentence)
-        console.log("extendedSentence", extendedSentence)
-
-        const newSentence = extend ? extendedSentence : rephrasedSentence;
-        const newText = project.script.screenplay.replace(highlightedText, newSentence);
-        // console.log("newText", newText)
-
-        const updatedScript: Script = {
-            ...project.script,
-            screenplay: newText,
-            versions: project.script.versions.map((version) =>
-                version.id === project?.script?.versions[currentVersionIndex].id
-                    ? {...version, text: newText}
-                    : version
-            )
+    const renderCritiqueCard = () => {
+        if (isLoading(script.critiqueStage)) {
+            return <QuestionSkeleton width={menuWidth}/>;
+        } else if (isReadyToShow(script.critiqueStage, !!script.critique) && !!script?.critique) {
+            return <CritiqueCard strengths={script.critique.strength}
+                                 improvement={script.critique.improvementArea}
+                                 summary={script.critique.improvementSummary}/>;
         }
+    };
 
-        const updatedProject: Project = {
-            ...project,
-            script: updatedScript
-        };
+    const renderAnalysisCard = () => {
+        if (isLoading(script.analysisStage)) {
+            return <QuestionSkeleton width={menuWidth}/>;
+        } else if (isReadyToShow(script.analysisStage, !!script.analysis) && !!script.analysis) {
+            return <AnalysisCard incident={script.analysis.incitingIncident}
+                                 characters={script.analysis.characterDevelopment}
+                                 themes={script.analysis.thematicImplications}
+                                 foreshadowing={script.analysis.narrativeForeshadowing}/>;
+        }
+    };
 
-        dispatch(updateProject(updatedProject))
-    }
+    const renderConsistencyCard = () => {
+        if (isLoading(script.consistencyStage)) {
+            return <QuestionSkeleton width={menuWidth}/>;
+        } else if (isReadyToShow(script.consistencyStage, !!script.consistency && script.consistency.length > 0) && !!script.consistency) {
+            return (script.consistency.map((c, index) =>
+                <ConsistencyAccordion key={index}
+                                      index={index}
+                                      text={c.text}
+                                      issue={c.issue}
+                                      suggestion={c.suggestion}
+                                      revisedText={c.revisedText}
+                                      // onClick={(index) => onClickConsistencyCheck(index)}
+                                      menuWidth={menuWidth}/>
+            ))
+        }
+    };
 
     const renderCard = () => {
         if (!project || !project.script) return <></>;
 
         switch (selectedMenuItem) {
             case MenuItem.CRITIQUE:
-                if (project.script.critique) {
-                    return <CritiqueCard strengths={project.script.critique.strength}
-                                         improvement={project.script.critique.improvementArea}
-                                         summary={project.script.critique.improvementSummary}/>;
-                } else {
-                    return <QuestionSkeleton width={menuWidth}/>;
-                }
+                return renderCritiqueCard();
             case MenuItem.ANALYSE:
-                if (project.script.analysis) {
-                    return <AnalysisCard incident={project.script.analysis.incitingIncident}
-                                         characters={project.script.analysis.characterDevelopment}
-                                         themes={project.script.analysis.thematicImplications}
-                                         foreshadowing={project.script.analysis.narrativeForeshadowing}/>;
-                } else {
-                    return <QuestionSkeleton width={menuWidth}/>;
-                }
+                return renderAnalysisCard();
             case MenuItem.CONSISTENCY:
-                if (project.script.consistency && project.script.consistency.length > 0) {
-                    return (project.script.consistency.map((c, index) =>
-                        <ConsistencyAccordion key={index}
-                                              index={index}
-                                              text={c.text}
-                                              issue={c.issue}
-                                              suggestion={c.suggestion}
-                                              revisedText={c.revisedText}
-                                              menuWidth={menuWidth}/>
-                    ))
-                } else {
-                    return <QuestionSkeleton width={menuWidth}/>;
-                }
-            case MenuItem.WHO:
-                return <WhoWroteWhatCard onClick={() => {}}
-                                         index={0}
-                                         text={""}/>
+                return renderConsistencyCard();
+            // case MenuItem.WHO:
+            //     return <WhoWroteWhatCard onClick={() => {}}
+            //                              index={0}
+            //                              text={""}/>
             case MenuItem.REPHRASE:
                 return <FloatingMenuAddCard text={rephrasedSentence}
-                                            onClick={addSentenceToStepText}
+                                            onClick={() => onAddSentence(false)}
                                             loading={!rephrasedSentence}/>;
             case MenuItem.EXPAND:
                 return <FloatingMenuAddCard text={extendedSentence}
-                                            onClick={() => addSentenceToStepText(true)}
+                                            onClick={() => onAddSentence(true)}
                                             loading={!extendedSentence}/>;
             case MenuItem.CRITIQUE_SENTENCE:
                 return <FloatingMenuCard text={sentenceCritique}

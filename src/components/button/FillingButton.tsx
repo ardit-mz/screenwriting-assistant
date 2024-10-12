@@ -22,14 +22,19 @@ const FillingButton: React.FC<FillingButtonProps> = ({ brainstormingText, onClic
             sx={{
                 background: brainstormingText.length === 0
                     ? SwaColor.primaryLighter
-                    : `linear-gradient(to right, ${SwaColor.primary} 0%, ${SwaColor.primary} ${percentageFilled - 10}%, ${SwaColor.primaryLighter} ${percentageFilled + 10}%, ${SwaColor.primaryLighter} 100%)`,
+                    : brainstormingText.length >= MAX_LENGTH
+                        ? SwaColor.primary
+                        : `linear-gradient(to right, ${SwaColor.primary} 0%, ${SwaColor.primary} ${percentageFilled - 10}%, ${SwaColor.primaryLighter} ${percentageFilled + 10}%, ${SwaColor.primaryLighter} 100%)`,
                 color: SwaColor.white,
                 ":hover": {
                     background: brainstormingText.length === 0
                         ? SwaColor.primaryLighter
-                        : `linear-gradient(to right, ${SwaColor.primaryLight2} 0%, ${SwaColor.primaryLight} ${percentageFilled - 10}%, ${SwaColor.primaryLighter2} ${percentageFilled + 10}%, ${SwaColor.primaryLighter} 100%)`,
+                        : brainstormingText.length >= MAX_LENGTH
+                            ? SwaColor.primary
+                            : `linear-gradient(to right, ${SwaColor.primaryLight2} 0%, ${SwaColor.primaryLight} ${percentageFilled - 10}%, ${SwaColor.primaryLighter2} ${percentageFilled + 10}%, ${SwaColor.primaryLighter} 100%)`,
                 },
                 transition: "background 0.3s ease",
+                boxShadow: 'none',
             }}
         >
             {TITLE}

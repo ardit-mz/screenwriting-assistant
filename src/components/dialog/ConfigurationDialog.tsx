@@ -1,5 +1,3 @@
-// components/dialog/AddDialogAddDialog.tsx
-
 import React, { useState } from 'react';
 import Dialog from '@mui/material/Dialog';
 import DialogActions from '@mui/material/DialogActions';
@@ -12,14 +10,16 @@ import {Model} from '../../enum/Models.ts'
 import Typography from "@mui/material/Typography";
 import {useSelector} from "react-redux";
 import {selectApiKey} from "../../features/model/ModelSlice.ts";
+import {SwaColor} from "../../enum/SwaColor.ts";
 
 interface ConfigurationDialogProps {
     open: boolean;
     onClose: () => void;
     onSave: (model: string, apiKey: string) => void;
+    error?: boolean;
 }
 
-const ConfigurationDialog: React.FC<ConfigurationDialogProps> = ({ open, onClose, onSave }) => {
+const ConfigurationDialog: React.FC<ConfigurationDialogProps> = ({ open, onClose, onSave, error }) => {
     const aps = useSelector(selectApiKey);
     const [apiKey, setApiKey] = useState<string>('');
     const [selectedModel, setSelectedModel] = useState<string>("GPT_4o");
@@ -78,8 +78,13 @@ const ConfigurationDialog: React.FC<ConfigurationDialogProps> = ({ open, onClose
                     onKeyDown={handleKeyPress}
                     style={{margin:0}}
                 />
+                {error &&
+                    <Typography color={SwaColor.error} variant="body2" gutterBottom sx={{whiteSpace: 'normal', margin: '4px 0px 0px 4px'}}>
+                        Incorrect API key. You can find yours at <Link href="https://platform.openai.com/account/api-keys" color="inherit" target="_blank" rel="noopener noreferrer">https://platform.openai.com/account/api-keys</Link>
+                    </Typography>
+                }
                 <Typography variant="body2" gutterBottom sx={{whiteSpace: 'normal', margin: '4px 0px 0px 4px'}}>
-                    If you do not have an API key you can <Link href="https://platform.openai.com/docs/quickstart/create-and-export-an-api-key" color="inherit">create a key</Link>
+                    If you do not have an API key you can <Link href="https://platform.openai.com/docs/quickstart/create-and-export-an-api-key" color="inherit" target="_blank" rel="noopener noreferrer">create a key</Link>
                 </Typography>
             </DialogContent>
 

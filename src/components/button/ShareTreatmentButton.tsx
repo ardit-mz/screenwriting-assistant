@@ -1,25 +1,18 @@
+import React, {useState} from "react";
+import {Button, Menu, MenuItem} from "@mui/material";
 import ListItemIcon from "@mui/material/ListItemIcon";
+import ContentCopyIcon from "@mui/icons-material/ContentCopy";
 import ListItemText from "@mui/material/ListItemText";
-import {Accordion, AccordionDetails, AccordionSummary, createTheme, MenuItem, ThemeProvider} from "@mui/material";
-import React, {useRef, useState} from "react";
-import ShareIcon from "@mui/icons-material/Share";
-import PictureAsPdfIcon from '@mui/icons-material/PictureAsPdf';
-import SaveAltIcon from '@mui/icons-material/SaveAlt';
-import ContentCopyIcon from '@mui/icons-material/ContentCopy';
-import MailOutlineIcon from '@mui/icons-material/MailOutline';
+import SaveAltIcon from "@mui/icons-material/SaveAlt";
 import {ShareMenuItem} from "../../enum/ShareMenuItem.ts";
-import TextSnippetIcon from '@mui/icons-material/TextSnippet';
-import HistoryEduOutlinedIcon from '@mui/icons-material/HistoryEduOutlined';
+import MailOutlineIcon from "@mui/icons-material/MailOutline";
+import PictureAsPdfIcon from "@mui/icons-material/PictureAsPdf";
+import TextSnippetIcon from "@mui/icons-material/TextSnippet";
+import HistoryEduOutlinedIcon from "@mui/icons-material/HistoryEduOutlined";
+import {jsPDF} from "jspdf";
+import {Document, Packer, Paragraph, TextRun} from "docx";
 import {useSelector} from "react-redux";
 import {selectCurrentProject} from "../../features/project/ProjectSlice.ts";
-import { jsPDF } from 'jspdf';
-import { Document, Packer, Paragraph, TextRun } from 'docx';
-import Box from "@mui/material/Box";
-import {SwaColor} from "../../enum/SwaColor.ts";
-
-export interface ShareMenuProps {
-    text: string | null;
-}
 
 const SUB_ITEMS = [
     {
@@ -49,58 +42,28 @@ const SUB_ITEMS = [
     },
 ]
 
-const ShareMenu: React.FC<ShareMenuProps> = ({text}) => {
+interface ShareTreatmentButtonProps {
+    text: string | null;
+}
+
+/* https://mui.com/material-ui/react-menu/#basic-menu */
+
+const ShareTreatmentButton: React.FC<ShareTreatmentButtonProps> = ({text}) => {
     const project = useSelector(selectCurrentProject);
-    const menuItemRef = useRef<HTMLLIElement>(null);
-    const parsedText = text ? text.replace('```fountain', '').replace('```', '') : null
+    const parsedText = text ? text.replace('```md', '').replace('```', '') : null
 
     const [isCopied, setIsCopied] = useState(false);
     const [isSaving, setIsSaving] =  useState<{ [k: number]: boolean }>({});
+    const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null);
+    const open = Boolean(anchorEl);
 
-    // useEffect(() => {
-    //     const handleClickOutside = (event: MouseEvent) => {
-    //         if (menuItemRef.current && !menuItemRef.current.contains(event.target as Node)) {
-    //             setIsClicked(false);
-    //         }
-    //     };
-    //     document.addEventListener("mousedown", handleClickOutside);
-    //     return () => {
-    //         document.removeEventListener("mousedown", handleClickOutside);
-    //     };
-    // }, []);
+    const handleClick = (event: React.MouseEvent<HTMLButtonElement>) => {
+        setAnchorEl(event.currentTarget);
+    };
 
-    const theme = createTheme({
-        components: {
-            MuiMenuItem: {
-                styleOverrides: {
-                    root: {
-                        width: '100%',
-                        backgroundColor: 'white',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'flex-start',
-                    }
-                }
-            },
-            MuiListItemText: {
-                styleOverrides: {
-                    root: {
-                        display: 'inline-flex',
-                        marginLeft: '8px',
-                        flexGrow: 1,
-                    }
-                }
-            },
-            MuiListItemIcon: {
-                styleOverrides: {
-                    root: {
-                        minWidth: 'auto',
-                        marginRight: '8px'
-                    }
-                }
-            }
-        }
-    });
+    const handleClose = () => {
+        setAnchorEl(null);
+    };
 
     const handleSubItemClick = (item: ShareMenuItem, index: number) => {
         switch (item) {
@@ -127,7 +90,6 @@ const ShareMenu: React.FC<ShareMenuProps> = ({text}) => {
     }
 
     const handleCopy = () => {
-        // if (!text) return;
         if (!parsedText) return;
 
         navigator.clipboard.writeText(parsedText);
@@ -139,7 +101,6 @@ const ShareMenu: React.FC<ShareMenuProps> = ({text}) => {
     }
 
     const handleSave = (index: number) => {
-        // if (!text) return;
         if (!parsedText) return;
 
         const blob = new Blob([parsedText], { type: 'text/plain' });
@@ -157,10 +118,9 @@ const ShareMenu: React.FC<ShareMenuProps> = ({text}) => {
     }
 
     const handleEmail = (index: number) => {
-        // if (!text) return;
         if (!parsedText) return;
 
-        const subject = "wr-AI-ter screenplay draft";
+        const subject = "wr-AI-ter treatment";
         const body = encodeURIComponent(`Here is a draft you made using wr-AI-ter:\n\n${parsedText}`).replace(/%0A/g, '%0D%0A');
         window.location.href = `mailto:?subject=${encodeURIComponent(subject)}&body=${body}`;
 
@@ -233,17 +193,17 @@ const ShareMenu: React.FC<ShareMenuProps> = ({text}) => {
 
         // title
         const title = new Paragraph({
-                    children: [
-                        new TextRun({
-                            text: project.name,
-                            bold: true,
-                            size: 40,
-                        }),
-                        new TextRun({
-                            break: 2,
-                        }),
-                    ],
-                });
+            children: [
+                new TextRun({
+                    text: project.name,
+                    bold: true,
+                    size: 40,
+                }),
+                new TextRun({
+                    break: 2,
+                }),
+            ],
+        });
         paragraphs.push(title);
 
         // text
@@ -291,61 +251,38 @@ const ShareMenu: React.FC<ShareMenuProps> = ({text}) => {
             <MenuItem key={name} onClick={() => handleSubItemClick(name, index)}>
                 <ListItemIcon> {icon} </ListItemIcon>
                 <ListItemText primary={isSaving[index] ? savingName : name}
-                                     primaryTypographyProps={{ fontWeight: isSaving[index] ? 'bold' : ''}}> {name} </ListItemText>
+                              primaryTypographyProps={{ fontWeight: isSaving[index] ? 'bold' : ''}}> {name} </ListItemText>
             </MenuItem>)
     }
 
     return (
-        <ThemeProvider theme={theme}>
-            <Box ref={menuItemRef}
-                 sx={{width:'100%', '&:hover': {backgroundColor: SwaColor.grey}}}
-
+        <div>
+            <Button variant='outlined'
+                    aria-controls={open ? 'basic-menu' : undefined}
+                    aria-haspopup="true"
+                    aria-expanded={open ? 'true' : undefined}
+                    onClick={handleClick}
             >
-                <Accordion
-                    elevation={0}
-                    disableGutters
-                    sx={{
-                        backgroundColor: "transparent",
-                        width: '100%',
-                        px: 2,
-                        pt: '6px',
-                    }}
-                >
-                    <AccordionSummary
-                        sx={{
-                            px: 0,
-                            pt: 0,
-                            minHeight: 0,
-                            '& .MuiAccordionSummary-content': {my: 0},
-                            '& .MuiAccordionSummary-content.Mui-expanded': {my: 0},
-                        }}
-                    >
-                        <ListItemIcon> <ShareIcon/> </ListItemIcon>
-                        <ListItemText> Share </ListItemText>
-                    </AccordionSummary>
-                    <AccordionDetails
-                        sx={{
-                            pt: 1,
-                            pb: 0,
-                            margin: 0,
-                            marginTop: "6px",
-                            width: '100%',
-                            px: 0
-                        }}
-                    >
-                        <MenuItem onClick={handleCopy}>
-                            <ListItemIcon> <ContentCopyIcon /> </ListItemIcon>
-                            <ListItemText primary={isCopied ? "Script copied" : "Copy"}
-                                          primaryTypographyProps={{ fontWeight: isCopied ? 'bold' : ''}}/>
-                        </MenuItem>
-                        {renderSubItems()}
-                    </AccordionDetails>
-                </Accordion>
-
-            </Box>
-
-        </ThemeProvider>
+                Share
+            </Button>
+            <Menu
+                id="basic-menu"
+                anchorEl={anchorEl}
+                open={open}
+                onClose={handleClose}
+                MenuListProps={{
+                    'aria-labelledby': 'basic-button',
+                }}
+            >
+                <MenuItem onClick={handleCopy}>
+                    <ListItemIcon> <ContentCopyIcon /> </ListItemIcon>
+                    <ListItemText primary={isCopied ? "Treatment copied" : "Copy"}
+                                  primaryTypographyProps={{ fontWeight: isCopied ? 'bold' : ''}}/>
+                </MenuItem>
+                {renderSubItems()}
+            </Menu>
+        </div>
     )
 }
 
-export default ShareMenu;
+export default ShareTreatmentButton;
