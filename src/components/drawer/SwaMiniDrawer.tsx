@@ -12,14 +12,17 @@ import Export from "../../views/Export.tsx";
 import Refinement from "../../views/Refinement.tsx";
 import ViewSidebarOutlinedIcon from '@mui/icons-material/ViewSidebarOutlined';
 import ViewSidebarIcon from '@mui/icons-material/ViewSidebar';
-import {Navigate, Route, Routes, useLocation, useNavigate} from "react-router-dom";
 import Structure from "../../views/Structure.tsx";
-import {ScreenNames} from "../../enum/ScreenNames.ts";
-import {useSelector} from "react-redux";
-import {selectCurrentProject, selectProjects} from "../../features/project/ProjectSlice.ts";
+import {useDispatch, useSelector} from "react-redux";
+import {
+    selectCurrentProject,
+    selectProjects,
+    selectRoute, setRoute,
+    updateProjectStage
+} from "../../features/project/ProjectSlice.ts";
 import {ProjectStage} from "../../enum/ProjectStage.ts";
 import {createTheme, ThemeProvider} from "@mui/material";
-import { selectBlur, selectMode} from "../../features/theme/ThemeSlice.ts";
+import {selectBlur, selectMode} from "../../features/theme/ThemeSlice.ts";
 import RightDrawerItems from "./RightDrawerItems.tsx";
 import ButtonsHeader from "../button/ButtonsHeader.tsx";
 import ButtonsHeaderSkeleton from "../skeleton/ButtonsHeaderSkeleton.tsx";
@@ -27,16 +30,17 @@ import {SwaColor} from "../../enum/SwaColor.ts";
 import {selectOpenRight} from "../../features/drawer/DrawerSlice.ts";
 import About from "../../views/About.tsx";
 import Brainstorming from "../../views/Brainstorming.tsx";
+import {AppDispatch} from "../../store.ts";
 
 const MiniDrawer: React.FC = () => {
-    const location = useLocation();
     const projects = useSelector(selectProjects)
     const project = useSelector(selectCurrentProject);
     const mode = useSelector(selectMode)
     const blur = useSelector(selectBlur);
     const isOpenRight = useSelector(selectOpenRight);
-    const navigate = useNavigate();
     const tmpTitle = 'wr-AI-ter';
+    const dispatch = useDispatch<AppDispatch>();
+    const route = useSelector(selectRoute);
 
     const [open, setOpen] = React.useState(false);
     const [openRight, setOpenRight] = React.useState(false);
@@ -269,12 +273,16 @@ const MiniDrawer: React.FC = () => {
     });
 
     useEffect(() => {
-        if (project && location.pathname !== ScreenNames.ABOUT) {
-        // if (project) {
-            setActiveStep(getIndex(project.projectStage));
-            navigate(getPathForStage(project.projectStage));
+        if (project && project.projectStage != ProjectStage.ABOUT) {
+            if (route === ProjectStage.ABOUT) {
+                setActiveStep(4);
+            } else {
+                setActiveStep(getIndex(project.projectStage));
+            }
+        } else {
+            setActiveStep(4);
         }
-    }, [project, project?.projectStage, navigate, location.pathname]);
+    }, [project, project?.projectStage, route]);
 
     useEffect(() => {
         if (projects.length === 0) {
@@ -309,39 +317,29 @@ const MiniDrawer: React.FC = () => {
         }
     }
 
-    function getPathForStage(stage: string) {
-        switch (stage) {
-            case ProjectStage.BRAINSTORMING:
-                return ScreenNames.BRAINSTORMING;
-            case ProjectStage.STRUCTURE:
-                return ScreenNames.STRUCTURE;
-            case ProjectStage.REFINEMENT:
-                return ScreenNames.REFINEMENT;
-            case ProjectStage.COMPLETION:
-                return ScreenNames.EXPORT;
-            default:
-                return ScreenNames.BRAINSTORMING;
-        }
-    }
-
     const handleStepChange = (step: number) => {
-        if (projects.length === 0) return
+        if (projects.length === 0 && step != 0) return
         setActiveStep(step);
         switch (step) {
             case 0:
-                navigate(ScreenNames.BRAINSTORMING);
+                dispatch(updateProjectStage(ProjectStage.BRAINSTORMING));
+                dispatch(setRoute(ProjectStage.BRAINSTORMING));
                 break;
             case 1:
-                navigate(ScreenNames.STRUCTURE);
+                dispatch(updateProjectStage(ProjectStage.STRUCTURE));
+                dispatch(setRoute(ProjectStage.STRUCTURE));
                 break;
             case 2:
-                navigate(ScreenNames.REFINEMENT);
+                dispatch(updateProjectStage(ProjectStage.REFINEMENT));
+                dispatch(setRoute(ProjectStage.REFINEMENT));
                 break;
             case 3:
-                navigate(ScreenNames.EXPORT);
+                dispatch(updateProjectStage(ProjectStage.COMPLETION));
+                dispatch(setRoute(ProjectStage.COMPLETION));
                 break;
             default:
-                navigate(ScreenNames.BRAINSTORMING);
+                dispatch(updateProjectStage(ProjectStage.BRAINSTORMING));
+                dispatch(setRoute(ProjectStage.BRAINSTORMING));
         }
     };
 
@@ -376,7 +374,7 @@ const MiniDrawer: React.FC = () => {
                                         style={{marginLeft: 10, marginRight: 10, minWidth: 300}}>
                                 {project ? project.name : tmpTitle}
                             </Typography>
-                            <SwaStepper steps={Object.values(ProjectStage)}
+                            <SwaStepper steps={Object.values(ProjectStage).filter(ps => ps != ProjectStage.ABOUT)}
                                         activeStep={activeStep}
                                         setActiveStep={handleStepChange}
                                         completed={completed}/>
@@ -395,39 +393,38 @@ const MiniDrawer: React.FC = () => {
                 </AppBar>
 
                 <SDrawer variant="permanent" open={open}>
-                    <div className={blur ? 'blur-background' : ''} style={{height: '100%'}} >
+                    <div className={blur ? 'blur-background' : ''} style={{height: '100%'}}>
                         <DrawerItems open={open} items={projects}/>
                     </div>
                 </SDrawer>
 
-                <Box sx={{flexGrow: 1, p: 3, mt: 10, width: '100%',
+                <Box sx={{
+                    flexGrow: 1, p: 3, mt: 10, width: '100%',
                     // height: '100vh',
                     height: 'calc(100vh - 192px)'
                 }} className={blur ? 'blur-background' : ''}>
-                    <Routes>
-                        <Route path="*" element={<Brainstorming />} />
-                        <Route path={ScreenNames.ABOUT} element={<About />} />
-
-                        {!!projects && projects.length > 0 ? (
-                            <>
-                                <Route path={ScreenNames.STRUCTURE} element={<Structure />} />
-                                <Route path={ScreenNames.REFINEMENT} element={<Refinement />} />
-                                <Route path={ScreenNames.EXPORT} element={<Export />} />
-                            </>
-                        ) : (
-                            <>
-                                <Route path={ScreenNames.STRUCTURE} element={<Navigate to="/" />} />
-                                <Route path={ScreenNames.REFINEMENT} element={<Navigate to="/" />} />
-                                <Route path={ScreenNames.EXPORT} element={<Navigate to="/" />} />
-                            </>
-                        )}
-                    </Routes>
+                    {(() => {
+                        switch (route) {
+                            case ProjectStage.BRAINSTORMING:
+                                return <Brainstorming/>
+                            case ProjectStage.STRUCTURE:
+                                return <Structure/>
+                            case ProjectStage.REFINEMENT:
+                                return <Refinement/>
+                            case ProjectStage.COMPLETION:
+                                return <Export/>
+                            case ProjectStage.ABOUT:
+                                return <About/>
+                            default:
+                                return <Brainstorming/>
+                        }
+                    })()}
                 </Box>
 
                 {project?.projectStage === ProjectStage.BRAINSTORMING &&
                     <SDrawer variant="permanent" open={openRight} anchor={"right"}>
                         <div className={blur ? 'blur-background' : ''} style={{height: '100%'}}>
-                            { openRight && <RightDrawerItems/> }
+                            {openRight && <RightDrawerItems/>}
                         </div>
                     </SDrawer>
                 }

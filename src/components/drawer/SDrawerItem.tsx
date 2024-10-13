@@ -1,5 +1,3 @@
-// components/SDrawerItem.tsx
-
 import React, {useEffect, useState} from 'react';
 import ListItem from '@mui/material/ListItem';
 import ListItemButton from '@mui/material/ListItemButton';
@@ -9,11 +7,10 @@ import {useDispatch, useSelector} from "react-redux";
 import {
     deleteProject,
     selectCurrentProject,
-    setCurrentProject, updateProject
+    setCurrentProject, setRoute, updateProject, updateProjectStage
 } from "../../features/project/ProjectSlice.ts";
 import ArticleOutlinedIcon from "@mui/icons-material/ArticleOutlined";
 import ArticleIcon from '@mui/icons-material/Article';
-import {useNavigate} from "react-router-dom";
 import IconButton from "@mui/material/IconButton";
 import DeleteForeverOutlinedIcon from "@mui/icons-material/DeleteForeverOutlined";
 import DeleteDialog from "../dialog/DeleteDialog.tsx";
@@ -37,7 +34,6 @@ interface DrawerItemProps {
 const DrawerItem: React.FC<DrawerItemProps> = ({id, text, open, selected}) => {
     const dispatch = useDispatch();
     const currentProject = useSelector(selectCurrentProject);
-    const navigate = useNavigate();
     const [hover, setHover] = useState(false);
     const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
     // const blur = useSelector(selectBlur); // TODO check if necessary
@@ -55,7 +51,8 @@ const DrawerItem: React.FC<DrawerItemProps> = ({id, text, open, selected}) => {
 
         dispatch(setCurrentProject(id));
         if (currentProject) {
-            navigate(currentProject?.projectStage)
+            dispatch(updateProjectStage(currentProject?.projectStage));
+            dispatch(setRoute(currentProject?.projectStage));
         }
     }
 
