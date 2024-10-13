@@ -1,13 +1,11 @@
 import Typography from "@mui/material/Typography";
 import Box from "@mui/material/Box";
 import {Button, TextField, Tooltip} from "@mui/material";
-import {useNavigate} from "react-router-dom";
-import {ScreenNames} from "../enum/ScreenNames.ts";
 import {useDispatch, useSelector} from "react-redux";
 import React, {ChangeEvent, useEffect, useRef, useState} from "react";
 import {
     selectCurrentProject,
-    selectProjects,
+    selectProjects, setRoute,
     updateProject,
     updateProjectStage, updateSuggestions
 } from "../features/project/ProjectSlice.ts";
@@ -23,7 +21,6 @@ const Brainstorming = () => {
     const projects = useSelector(selectProjects);
     const project = useSelector(selectCurrentProject);
     const dispatch = useDispatch();
-    const navigate = useNavigate();
     const apiKey = useSelector(selectApiKey);
 
     const title = 'What should the story be about?'
@@ -63,8 +60,6 @@ const Brainstorming = () => {
         try {
             const brainstormingPrompt = "My Brainstorming so far is:\\n" + project?.brainstorm;
             const suggestionsRes = await getSuggestions(brainstormingPrompt, apiKey)
-                // .then(res => { if (res) dispatch(showDialogError(false)); })
-                // .catch(() => dispatch(showDialogError(true)));
 
             if (suggestionsRes === 401) {
                 dispatch(showDialogError(true));
@@ -131,10 +126,9 @@ const Brainstorming = () => {
             brainstormChanged: hasBrainstormingChanged,
         };
 
-        dispatch(updateProject(updatedProject))
-        dispatch(updateProjectStage(ProjectStage.STRUCTURE))
-
-        navigate(ScreenNames.STRUCTURE)
+        dispatch(updateProject(updatedProject));
+        dispatch(updateProjectStage(ProjectStage.STRUCTURE));
+        dispatch(setRoute(ProjectStage.STRUCTURE));
     }
 
     return (

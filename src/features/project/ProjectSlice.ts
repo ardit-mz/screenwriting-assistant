@@ -1,27 +1,30 @@
-// features/project/projectSlice.ts
-
-import { createSlice, PayloadAction } from '@reduxjs/toolkit';
-import { Project } from '../../types/Project';
-import { ProjectStage } from '../../enum/ProjectStage';
-import { StoryBeat } from '../../types/StoryBeat';
+import {createSlice, PayloadAction} from '@reduxjs/toolkit';
+import {Project} from '../../types/Project';
+import {ProjectStage} from '../../enum/ProjectStage';
+import {StoryBeat} from '../../types/StoryBeat';
 import {RootState} from "../../store.ts";
 
 interface ProjectState {
     projects: Project[];
     currentProjectId: string | null;
     loading: boolean;
+    route: ProjectStage;
 }
 
 const initialState: ProjectState = {
     projects: [],
     currentProjectId: null,
     loading: false,
+    route: ProjectStage.BRAINSTORMING,
 };
 
 const ProjectSlice = createSlice({
     name: 'project',
     initialState,
     reducers: {
+        setRoute(state, action: PayloadAction<ProjectStage>) {
+          state.route = action.payload;
+        },
         addProject(state, action: PayloadAction<Project>) {
             state.projects.push(action.payload);
         },
@@ -114,11 +117,13 @@ const ProjectSlice = createSlice({
     },
 });
 
+export const selectRoute = (state: RootState) => state.projects.route;
 export const selectProjects = (state: RootState) => state.projects.projects;
 export const selectCurrentProject = (state: RootState) => state.projects.projects.find(project => project.id === state.projects.currentProjectId) || null;
 export const selectLoading = (state: RootState) => state.projects.loading;
 
 export const {
+    setRoute,
     addProject,
     updateProject,
     deleteProject,

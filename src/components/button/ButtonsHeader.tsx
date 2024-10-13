@@ -4,17 +4,14 @@ import {useDispatch, useSelector} from "react-redux";
 import {
     resetStoryBeatLocks,
     selectCurrentProject,
-    setLoading, updateProject,
+    setLoading, setRoute, updateProject,
     updateProjectStage,
 } from "../../features/project/ProjectSlice.ts";
 import {ProjectStage} from "../../enum/ProjectStage.ts";
-import {ScreenNames} from "../../enum/ScreenNames.ts";
 import {AppDispatch} from "../../store.ts";
-import {useNavigate} from "react-router-dom";
 import {regenerateStoryBeats} from "../../api/openaiAPI.ts";
 import RewriteAllButton from "./RewriteAllButton.tsx";
 import {selectApiKey} from "../../features/model/ModelSlice.ts";
-// import UploadWriting from "../fileUpload/UploadWriting.tsx";
 import {StoryBeat} from "../../types/StoryBeat";
 import {v4 as uuidv4} from "uuid";
 import {Project} from "../../types/Project";
@@ -24,7 +21,6 @@ import {showDialogError} from "../../features/drawer/DrawerSlice.ts";
 const ButtonsHeader = () => {
     const project = useSelector(selectCurrentProject) ?? null;
     const dispatch = useDispatch<AppDispatch>();
-    const navigate = useNavigate();
     const locked = project?.storyBeats ? project?.storyBeats?.some(s => s.locked) : false;
     const apiKey = useSelector(selectApiKey);
 
@@ -115,14 +111,14 @@ const ButtonsHeader = () => {
     }
 
     const handleNext = () => {
-        if (!project) return;
+        if (!project || !project.storyBeats || project.storyBeats.length < 1) return;
 
         if (project.projectStage === ProjectStage.STRUCTURE) {
-            dispatch(updateProjectStage(ProjectStage.REFINEMENT))
-            navigate(ScreenNames.REFINEMENT)
+            dispatch(updateProjectStage(ProjectStage.REFINEMENT));
+            dispatch(setRoute(ProjectStage.REFINEMENT));
         } else if (project.projectStage === ProjectStage.REFINEMENT) {
-            dispatch(updateProjectStage(ProjectStage.COMPLETION))
-            navigate(ScreenNames.EXPORT)
+            dispatch(updateProjectStage(ProjectStage.COMPLETION));
+            dispatch(setRoute(ProjectStage.COMPLETION));
         }
     }
 

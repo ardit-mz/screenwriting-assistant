@@ -4,24 +4,24 @@ import { Container, Typography, Link, Grid, Box, Divider } from '@mui/material';
 const About: React.FC = () => {
     return (
         <Container maxWidth="md" style={{height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', marginTop: 80}}>
-            <Box 
-                // sx={{display: 'flex', flexDirection: 'column', height: '100%', justifyContent: 'space-between'}}
-            >
+            <Box>
             <Grid container spacing={2} alignItems="center">
                 <Grid item xs={6}>
                     <Link href="https://kilab.hff-muc.de" target="_blank" rel="noopener noreferrer">
-                        <img src="/ki_logo.png" alt="KI Lab Logo" style={{ maxWidth: 80 }} />
+                        {/*<img src="/ki_logo.png" alt="KI Lab Logo" style={{maxWidth: 80}}/>*/}
+                        <img src="/screenwriting-assistant/ki_logo.png" alt="KI Lab Logo" style={{maxWidth: 80}}/>
                     </Link>
                 </Grid>
                 <Grid item xs={6}>
                     <Link href="https://www.hff-muenchen.de" target="_blank" rel="noopener noreferrer">
-                        <img src="/hff_logo.png" alt="HFF Logo" style={{ maxWidth: 80 }} />
+                        {/*<img src="/hff_logo.png" alt="HFF Logo" style={{maxWidth: 80}}/>*/}
+                        <img src="/screenwriting-assistant/hff_logo.png" alt="HFF Logo" style={{maxWidth: 80}}/>
                     </Link>
                 </Grid>
             </Grid>
 
-            <Box mt={10} mb={10}>
-                <Typography variant="h4" align="center" sx={{mb:2}}>
+                <Box mt={10} mb={10}>
+                    <Typography variant="h4" align="center" sx={{mb:2}}>
                     wr-AI-ter
                 </Typography>
                 <Typography variant="subtitle1" align="center" gutterBottom>

@@ -3,17 +3,17 @@ import List from '@mui/material/List';
 import DrawerItem from './SDrawerItem.tsx'
 import {Project} from "../../types/Project";
 import SDrawerItemAdd from "./SDrawerItemAdd.tsx";
-import {useSelector} from "react-redux";
-import {selectCurrentProject} from "../../features/project/ProjectSlice.ts";
+import {useDispatch, useSelector} from "react-redux";
+import {selectCurrentProject, setRoute} from "../../features/project/ProjectSlice.ts";
 import SDrawerItemConfig from "./SDrawerItemConfig.tsx";
 import ListItemButton from "@mui/material/ListItemButton";
 import ListItemIcon from "@mui/material/ListItemIcon";
 import ListItemText from "@mui/material/ListItemText";
 import ListItem from "@mui/material/ListItem";
 import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
-import {ScreenNames} from "../../enum/ScreenNames.ts";
-import {useNavigate} from "react-router-dom";
 import Box from "@mui/material/Box";
+import {ProjectStage} from "../../enum/ProjectStage.ts";
+import {AppDispatch} from "../../store.ts";
 
 interface DrawerItemsProps {
     open: boolean;
@@ -22,7 +22,7 @@ interface DrawerItemsProps {
 
 const DrawerItems: React.FC<DrawerItemsProps> = ({open, items}) => {
     const currentProject = useSelector(selectCurrentProject);
-    const navigate = useNavigate();
+    const dispatch = useDispatch<AppDispatch>();
 
     return (
         <Box 
@@ -43,7 +43,7 @@ const DrawerItems: React.FC<DrawerItemsProps> = ({open, items}) => {
             <List>
                 <ListItem disablePadding sx={{display: 'block'}}>
                     <ListItemButton
-                        onClick={() => navigate(ScreenNames.ABOUT)}
+                        onClick={() => dispatch(setRoute(ProjectStage.ABOUT))}
                         sx={{minHeight: 48, justifyContent: open ? 'initial' : 'center', px: 2.5}}>
                         <ListItemIcon sx={{minWidth: 0, mr: open ? 3 : 'auto', justifyContent: 'center'}}>
                             <InfoOutlinedIcon/>
