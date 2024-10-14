@@ -99,9 +99,7 @@ const ScriptTextField = React.forwardRef<HTMLDivElement, ScriptTextFieldProps>(
 
         return (
             <Box sx={{
-                width: '100%',
                 overflowY: 'auto',
-                flex: 3,
                 marginRight: 2,
                 // '&::-webkit-scrollbar': {display: 'none'},
                 ...style

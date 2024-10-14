@@ -18,13 +18,14 @@ import {selectApiKey} from "../features/model/ModelSlice.ts";
 import {MenuCardStage} from "../enum/MenuCardStage.ts";
 import {selectDialogError, showDialogError} from "../features/drawer/DrawerSlice.ts";
 import {debounce} from "../helper/DebounceHelper.ts";
+import Box from "@mui/material/Box";
 
 const Structure = () => {
     const dispatch = useDispatch<AppDispatch>();
     const project = useSelector(selectCurrentProject)
     const dndOptionShown = useSelector(selectDndOptionShown);
     const apiKey = useSelector(selectApiKey);
-    const scrollContainerRef = useRef(null);
+    // const scrollContainerRef = useRef(null);
     const dialogError = useSelector(selectDialogError)
 
     const [steps, setSteps] = useState(project?.storyBeats);
@@ -50,26 +51,26 @@ const Structure = () => {
         })
     );
 
-    useEffect(() => {
-        const scrollContainer = scrollContainerRef.current;
-
-        const onWheel = (event: WheelEvent) => {
-            if (event.deltaY !== 0 && scrollContainer) {
-                (scrollContainer as HTMLElement).scrollLeft += event.deltaY;
-                event.preventDefault();
-            }
-        };
-
-        if (scrollContainer) {
-            (scrollContainer as HTMLElement).addEventListener('wheel', onWheel);
-        }
-
-        return () => {
-            if (scrollContainer) {
-                (scrollContainer as HTMLElement).removeEventListener('wheel', onWheel);
-            }
-        };
-    }, []);
+    // useEffect(() => {
+    //     const scrollContainer = scrollContainerRef.current;
+    //
+    //     const onWheel = (event: WheelEvent) => {
+    //         if (event.deltaY !== 0 && scrollContainer) {
+    //             (scrollContainer as HTMLElement).scrollLeft += event.deltaY;
+    //             event.preventDefault();
+    //         }
+    //     };
+    //
+    //     if (scrollContainer) {
+    //         (scrollContainer as HTMLElement).addEventListener('wheel', onWheel);
+    //     }
+    //
+    //     return () => {
+    //         if (scrollContainer) {
+    //             (scrollContainer as HTMLElement).removeEventListener('wheel', onWheel);
+    //         }
+    //     };
+    // }, []);
 
     const handleStoryBeats = async () => {
         if (!project) return;
@@ -175,7 +176,20 @@ const Structure = () => {
         }
     };
 
-    return (<>{
+    return (<Box sx={{
+            flexGrow: 1,
+            p: 3,
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'center',
+            // marginTop: 3,
+            // pt: 30,
+            // maxWidth: 800
+            // height: '100%',
+            // height: 'calc(100% - 0px)',
+            // overflowY: 'auto',
+        }}>{
         !!steps && steps.length > 0
             ?
             <div onFocus={handleFirstClick}>
@@ -194,7 +208,7 @@ const Structure = () => {
                 >
                     <SortableContext items={steps.filter(step => !step.locked)}
                                      strategy={horizontalListSortingStrategy}>
-                        <Stepper sx={{width: '100%', alignItems: 'flex-start'}}>
+                        <Stepper sx={{width: '100%', alignItems: 'flex-start', flexGrow: 1, overflowY: 'auto'}}>
                             {!!steps && steps.length > 0 &&
                                 steps.map((step, index) => (
                                     <SwaStep key={step.id}
@@ -205,8 +219,7 @@ const Structure = () => {
                                              onFocus={() => handleFocus(index)}
                                              onBlur={() => handleBlur()}
                                              focused={focusedIndex !== null && focusedIndex !== index}
-                                             handleFirstClick={() => {
-                                             }}
+                                             handleFirstClick={() => {}}
                                     />))
                             }
                         </Stepper>
@@ -218,7 +231,7 @@ const Structure = () => {
                     <SwaStepSkeleton key={index} showIcon={0 < index && index < 4}/>
                 ))}
             </Stepper>
-        }</>
+        }</Box>
     )
 }
 

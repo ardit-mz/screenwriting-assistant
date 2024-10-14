@@ -558,49 +558,71 @@ selectedStep.questionStage === MenuCardStage.NEEDS_UPDATE || selectedStep.questi
 
     return (
         <Box sx={{
+            flexGrow: 1,
+            // p: 3,
             display: 'flex',
             flexDirection: 'row',
             alignItems: 'start',
-            mt: 4,
-            mb: 4,
-            pr: 8,
-            width: '90vw',
-            height: '100%',
-            overflow: 'hidden',
-            position: 'relative'
+            // marginTop: 3,
+            // maxWidth: 800
+            // display: 'flex',
+            // flexDirection: 'row',
+            // alignItems: 'start',
+            // mt: 4,
+            // mb: 4,
+            // mr: 8,
+            width: '100%',
+            height: 'calc(100% -162px)',
+            // overflow: 'hidden',
+            // position: 'relative'
+            // position: 'relative',
         }}>
             {(!!steps && steps.length > 0 && !!selectedStep)
                 ? <>
                     {/* Left */}
-                        <Box sx={{
-                            flex: 1,
-                            flexDirection: 'row',
-                            display: 'flex',
-                            mt: 5,
-                            height: `554px`,
-                        }}>
-                            {currentStepIndex > 0 &&
-                                <NavigateToStepCard onClick={handlePrev} position={'left'}/>
-                            }
-                        </Box>
+                    <Box sx={{
+                        // flexGrow: 1,
+                        display: 'flex',
+                        flexDirection: 'row',
+                        justifyContent: 'center',
+                        mt: 5,
+                        height: '554px',
+                        // width: '100px',
+                        // top:0,
+                        // bottom:0,
+                        // mb: '20px',
+                        // position: 'absolute',
+                    }}>
+                        {currentStepIndex > 0 &&
+                            <NavigateToStepCard onClick={handlePrev} position={'left'}/>
+                        }
+                    </Box>
 
                     {/* Middle */}
                     <Box style={{
                         display: 'flex',
-                        flex: 10,
+                        // flex: 1,
                         flexDirection: 'row',
                         alignItems: 'flex-start',
-                        padding: 0,
-                        backgroundColor: '',
-                        boxShadow: "none",
-                        width: '100%',
-                        height: '100%',
+                        // padding: 0,
+                        // backgroundColor: '',
+                        // boxShadow: "none",
+                        // width: '100%',
+                        // height: '100%',
+                        // overflow: 'hidden',
+                        // marginLeft: 160,
+                        // marginRight: 160,,
+                        paddingLeft: 30,
+                        paddingRight: 30,
                     }}
                     >
                         <Box style={{
                             display: 'flex',
                             flexDirection: 'column',
-                            flex: 6,
+                            // flex: 6,
+                            // height: '100%',
+                            // minWidth: '300px',
+                            width: '100%',
                         }}>
                             <div style={{
                                     display: 'flex',
@@ -616,8 +638,8 @@ selectedStep.questionStage === MenuCardStage.NEEDS_UPDATE || selectedStep.questi
                                                            disabled={loadingMenu}/>}
                             </div>
 
-                            {loadingStep ? <Skeleton variant="rectangular" height={554} width={'100%'} sx={{mt: 2}}/>
-                                : <div ref={textFieldContainerRef}>
+                            {loadingStep ? <Skeleton variant="rectangular" height={554} width={600} sx={{mt: 2}}/>
+                                : <Box ref={textFieldContainerRef} sx={{ height: '100%' }}>
                                     <TextField fullWidth
                                                multiline
                                                margin={"normal"}
@@ -628,14 +650,22 @@ selectedStep.questionStage === MenuCardStage.NEEDS_UPDATE || selectedStep.questi
                                                onBlur={handleStepTextBlur}
                                                id="outlined-multiline-static"
                                                rows={20}
+                                               sx={{ height: '100%',
+                                                   width: 600
+                                               }}
                                     />
-                                </div>
+                                </Box>
                             }
                         </Box>
 
-                        <Box style={{flex: 5, marginTop: 40,
-                            // overflowY: 'auto',
-                            height: '100%',
+                        <Box sx={{
+                            display: 'flex',
+                            // flex: 4,
+                            flexDirection: 'column',
+                            marginTop: 5,
+                            // height: '100%',
+                            // width: 500,
+                            // position: 'relative',
                         }}>
                             <RefinementMenu selectedStep={selectedStep}
                                             contextMenuRef={contextMenuRef}
@@ -646,11 +676,21 @@ selectedStep.questionStage === MenuCardStage.NEEDS_UPDATE || selectedStep.questi
                                             onQuestion={handleQuestion}
                                             onCritique={handleCritique}
                                             onAnalysis={handleAnalysis}
+                                            menuWidth={menuWidth}
                             />
-                            <Box style={{
-                                // flex: 5,
-                                marginTop: 10,
-                                overflowY: 'auto', height: '100%'
+                            <Box sx={{
+                                mt: 2,
+                                // overflowY: 'auto',
+                                // height: '100%',
+                                // top: contextMenuRef?.current?.offsetHeight ?? 80,
+                                // bottom:0,
+                                // // mb: '0px',
+                                // position: 'absolute',
+                                // overflowY: 'auto',
+                                // height: '20%',
+                                mb: 2,
+                                width: 532,
+                            //     TODO only this part should be scrollable
                             }}>
                             <RefinementMenuCards selectedStep={selectedStep}
                                                  selectedMenuItem={selectedMenuItem}
@@ -673,12 +713,18 @@ selectedStep.questionStage === MenuCardStage.NEEDS_UPDATE || selectedStep.questi
 
                     {/* Right */}
                         <Box sx={{
-                            flex: 1,
-                            flexDirection: 'row',
+                            // flex: 1,
+                            // flexDirection: 'row',
                             display: 'flex',
                             mt: 5,
                             height: `554px`,
-                            justifyContent: 'center'
+                            justifyContent: 'center',
+                            // width: '60px',
+                            // top:0,
+                            // right: 0,
+                            // bottom:0,
+                            // mb: '20px',
+                            // position: 'absolute',
                         }}>
                             {currentStepIndex < (steps.length - 1) &&
                                 <NavigateToStepCard onClick={handleNext} position={'right'}/>
