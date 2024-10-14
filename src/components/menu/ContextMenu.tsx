@@ -31,7 +31,7 @@ const ContextMenu = React.forwardRef<HTMLDivElement, ContextMenuProps>(
         };
 
         return (
-            <Card style={{marginLeft: 32, backgroundColor: 'white', ...style}} ref={ref}>
+            <Card style={{marginLeft: 32, width: 500, backgroundColor: 'white', ...style}} ref={ref}>
                 <ButtonBase onClick={handleExpandClick}
                             sx={{
                                 display: 'flex',

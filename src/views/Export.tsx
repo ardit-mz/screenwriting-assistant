@@ -442,9 +442,8 @@ const Export = () => {
         (!script?.screenplay || loading)
             ? <ExportSkeleton/>
 
-            : <Box sx={{display: 'flex', flexDirection: 'row', height: 'calc(100vh - 192px)'}}>
-                <ScriptTextField style={{flex: 7}}
-                                 text={currentText}
+            : <Box sx={{display: 'flex', flexDirection: 'row', height: 'calc(100vh - 192px)', width: '100%'}}>
+                <ScriptTextField text={currentText}
                                  versions={script?.versions ?? []}
                                  ref={textFieldContainerRef}
                                  currentVersionIndex={currentVersionIndex}
@@ -453,7 +452,7 @@ const Export = () => {
                 />
                 {/*<ScriptEditor text={project?.script.screenplay} />*/}
 
-                <Box sx={{flex: 3, width: '100%', mt: 3, minWidth: '500px', height: '100%'}}>
+                <Box sx={{flex: 4, mt: 3, width: '600px', height: '100%'}}>
                     <CompletionMenu project={project}
                                     handleRewriteScreenplay={handleRewriteScreenplay}
                                     handleShowTreatment={handleShowTreatment}
@@ -467,18 +466,20 @@ const Export = () => {
                     <Box style={{
                         // flex: 5,
                         marginTop: 10,
-                        overflowY: 'auto', height: '100%'
+                        overflowY: 'auto',
+                        height: '100%',
+                        width: '532px',
                     }}>
-                    <CompletionMenuCards project={project}
-                                         script={script}
-                                         selectedMenuItem={selectedMenuItem}
-                                         menuWidth={menuWidth}
-                                         rephrasedSentence={rephrasedSentence}
-                                         extendedSentence={extendedSentence}
-                                         sentenceCritique={sentenceCritique}
-                                         onAddSentence={addSentenceToStepText}
-                                         // onClickConsistencyCheck={(index) => handleReplaceInconsistentText(index)}
-                    />
+                        <CompletionMenuCards project={project}
+                                             script={script}
+                                             selectedMenuItem={selectedMenuItem}
+                                             menuWidth={menuWidth}
+                                             rephrasedSentence={rephrasedSentence}
+                                             extendedSentence={extendedSentence}
+                                             sentenceCritique={sentenceCritique}
+                                             onAddSentence={addSentenceToStepText}
+                            // onClickConsistencyCheck={(index) => handleReplaceInconsistentText(index)}
+                        />
                     </Box>
                 </Box>
 

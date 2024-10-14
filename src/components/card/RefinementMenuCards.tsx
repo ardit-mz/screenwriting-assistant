@@ -10,6 +10,7 @@ import FloatingMenuCard from "./FloatingMenuCard.tsx";
 import React from "react";
 import {StoryBeat} from "../../types/StoryBeat";
 import {MenuCardStage} from "../../enum/MenuCardStage.ts";
+import Box from "@mui/material/Box";
 
 interface RefinementMenuCardsProps {
     selectedStep: StoryBeat;
@@ -106,7 +107,7 @@ const RefinementMenuCards: React.FC<RefinementMenuCardsProps> = ({
         }
     };
 
-    return (<>{ renderCard() }</>);
+    return (<Box sx={{overflow: 'hidden'}}>{ renderCard() }</Box>);
 }
 
 export default RefinementMenuCards;

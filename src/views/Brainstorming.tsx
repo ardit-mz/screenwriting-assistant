@@ -135,13 +135,17 @@ const Brainstorming = () => {
         <Box component="main"
              sx={{
                  flexGrow: 1,
-                 p: 3,
+                 // p: 3,
                  display: 'flex',
                  flexDirection: 'column',
                  alignItems: 'center',
-                 marginTop: 3,
-                 maxWidth: 800
-            }}
+                 justifyContent: 'start',
+                 marginTop: 10,
+                 maxWidth: 800,
+                 height: 'calc(100% - 80px)',
+                 overflowY: 'auto',
+                 paddingBottom: 2,
+             }}
         >
             <Typography variant={'h3'}>{title}</Typography>
             <Typography paragraph color={"grey"}>{description}</Typography>
@@ -157,7 +161,6 @@ const Brainstorming = () => {
             />
 
             <Box sx={{display: 'flex', gap: 1}}>
-
                 <Tooltip title={suggestionTooltip} placement={'bottom'} arrow>
                     <Button onClick={brainstormingSuggestions}
                             variant="outlined"
@@ -166,6 +169,7 @@ const Brainstorming = () => {
                         {suggestionTitle}
                     </Button>
                 </Tooltip>
+
             <FillingButton brainstormingText={brainstormingText ?? project?.brainstorm}
                            onClick={handleNext} />
             </Box>

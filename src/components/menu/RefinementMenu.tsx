@@ -21,6 +21,7 @@ interface RefinementMenuProps {
     onQuestion: () => void;
     onCritique: () => void;
     onAnalysis: () => void;
+    menuWidth: string | number;
 }
 
 const RefinementMenu: React.FC<RefinementMenuProps> = ({
@@ -33,7 +34,9 @@ const RefinementMenu: React.FC<RefinementMenuProps> = ({
                                                            onQuestion,
                                                            onCritique,
                                                            onAnalysis,
+                                                           menuWidth,
                                                        }) => {
+    const showDescription = (typeof menuWidth === 'number') ? (menuWidth > 350) : (parseFloat(menuWidth) > 450);
 
     const getDescription = (menuItem: MenuItem, stage: MenuCardStage, defaultText: string) => {
         if (selectedMenuItem === menuItem) {
@@ -51,7 +54,7 @@ const RefinementMenu: React.FC<RefinementMenuProps> = ({
             <ContextMenuItem icon={<MoodOutlinedIcon/>}
                              name="Emotion"
                              onClick={onEmotion}
-                             showDescription={true}
+                             showDescription={showDescription}
                              description={getDescription(MenuItem.EMOTION, selectedStep.emotionStage, 'Analysis and enhancement suggestions')}
                              backgroundColor={SwaColor.greenLight}
                              active={!!selectedMenuItem && selectedMenuItem === MenuItem.EMOTION}/>
@@ -59,7 +62,7 @@ const RefinementMenu: React.FC<RefinementMenuProps> = ({
             <ContextMenuItem icon={<QuestionMarkOutlinedIcon/>}
                              name="Question"
                              onClick={onQuestion}
-                             showDescription={true}
+                             showDescription={showDescription}
                              description={getDescription(MenuItem.QUESTION, selectedStep.questionStage, 'Analyse raised questions and answers')}
                              backgroundColor={SwaColor.orangeLight}
                              active={!!selectedMenuItem && selectedMenuItem === MenuItem.QUESTION}/>
@@ -67,7 +70,7 @@ const RefinementMenu: React.FC<RefinementMenuProps> = ({
             <ContextMenuItem icon={<PriorityHighOutlinedIcon/>}
                              name="Critique"
                              onClick={onCritique}
-                             showDescription={true}
+                             showDescription={showDescription}
                              description={getDescription(MenuItem.CRITIQUE, selectedStep.critiqueStage, 'Critique the whole story beat')}
                              backgroundColor={SwaColor.redLight}
                              active={!!selectedMenuItem && selectedMenuItem === MenuItem.CRITIQUE}/>
@@ -75,7 +78,7 @@ const RefinementMenu: React.FC<RefinementMenuProps> = ({
             <ContextMenuItem icon={<AutoGraphOutlinedIcon/>}
                              name="Analyse"
                              onClick={onAnalysis}
-                             showDescription={true}
+                             showDescription={showDescription}
                              description={getDescription(MenuItem.ANALYSE, selectedStep.analysisStage, 'Analyse this story beat')}
                              backgroundColor={SwaColor.violetLight}
                              active={!!selectedMenuItem && selectedMenuItem === MenuItem.ANALYSE}/>
