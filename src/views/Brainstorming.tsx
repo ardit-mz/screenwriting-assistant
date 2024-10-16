@@ -58,8 +58,8 @@ const Brainstorming = () => {
         }
 
         try {
-            const brainstormingPrompt = "My Brainstorming so far is:\\n" + project?.brainstorm;
-            const suggestionsRes = await getSuggestions(brainstormingPrompt, apiKey)
+            const suggestionsPrompt = project?.brainstorm ?? '';
+            const suggestionsRes = await getSuggestions(suggestionsPrompt , apiKey)
 
             if (suggestionsRes === 401) {
                 dispatch(showDialogError(true));

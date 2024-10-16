@@ -105,11 +105,7 @@ const Structure = () => {
     const updateStoryBeats = async () => {
         if (!project) return;
 
-        let brainstormingPrompt = `"My brainstorm for this story is:\\n\\${project.brainstorm}\\n`;
-        if (project?.uploadedText) {
-            brainstormingPrompt += `Also here are some more ideas for reference for style:\\n\\${project.uploadedText}\\n`;
-        }
-        const res = await getStoryBeatsFromBrainstorming(brainstormingPrompt, apiKey);
+        const res = await getStoryBeatsFromBrainstorming(project.brainstorm, apiKey, project?.uploadedText);
         if (res === 401) { dispatch(showDialogError(true)) }
 
         if (res) {

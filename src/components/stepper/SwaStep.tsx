@@ -31,6 +31,7 @@ import DragIndicatorIcon from '@mui/icons-material/DragIndicator';
 import IconButton from "@mui/material/IconButton";
 import {MenuCardStage} from "../../enum/MenuCardStage.ts";
 import {showDialogError} from "../../features/drawer/DrawerSlice.ts";
+import {storyBeatSToString} from "../../helper/StringHelper.ts";
 
 interface SwaStepProps {
     id: string;
@@ -100,10 +101,12 @@ const SwaStep: React.FC<SwaStepProps> = ({id, index, steps, setSteps, onBlur, on
         setRewritingStep(true);
 
         try {
-            // TODO improve prompts
-            const storyBeatsStr = "My story beats are:\\n" + project.storyBeats.map((s, i) => `${i + 1}: ${s.text}`).join('\n');
-            const storyBeatPrompt = `The story beat I want you to rewrite is ${steps[index].text}`;
-            const response = await rewriteStoryBeat(storyBeatsStr + storyBeatPrompt, apiKey);
+            const promptRewriteStoryBeat = `
+            My story beats are: ${storyBeatSToString(project.storyBeats)}.
+            The story beat you have to rewrite is ${steps[index].text}.
+            `;
+
+            const response = await rewriteStoryBeat(promptRewriteStoryBeat, apiKey);
 
             if (typeof response === 'number') {
                 if (response === 401) dispatch(showDialogError(true));
@@ -270,9 +273,13 @@ const SwaStep: React.FC<SwaStepProps> = ({id, index, steps, setSteps, onBlur, on
         }
 
         try {
-            const storyBeatsStr = "My story beats are:\\n" + project.storyBeats.map((s, i) => `${i + 1}: ${s.text}`).join('\n');
-            const storyBeatPrompt = `I need impulses just for the new story beat between the current story beats: ${previousStep?.index} and : ${nextStep?.index}`;
-            const response = await getStoryBeatImpulse(storyBeatsStr + storyBeatPrompt, apiKey);
+            const response = await getStoryBeatImpulse(
+                project.storyBeats,
+                previousStep?.index,
+                nextStep?.index,
+                undefined,
+                apiKey
+            );
 
             if (response === 401) { dispatch(showDialogError(true));}
             else {dispatch(showDialogError(false));}
@@ -340,7 +347,6 @@ const SwaStep: React.FC<SwaStepProps> = ({id, index, steps, setSteps, onBlur, on
             [impulseIndex]: true,
         }));
 
-        // TODO improve rewriteStoryBeatImpulse prompt
         const response = await rewriteStoryBeatImpulse(impulse, apiKey);
 
         if (typeof response === 'number') {
@@ -397,12 +403,14 @@ const SwaStep: React.FC<SwaStepProps> = ({id, index, steps, setSteps, onBlur, on
             const previousStep = steps[index - 1];
             const nextStep = steps[index + 1];
 
-            // TODO improve moreImpulses prompt
             // TODO add only one more impulse at a time
-            const storyBeatsStr = "My story beats are:\\n" + project.storyBeats.map((s, i) => `${i + 1}: ${s.text}`).join('\n');
-            const storyBeatPrompt = `I need more impulses for the current story beat between the story beats: ${previousStep?.index ?? ''} and ${nextStep?.index ?? ''}.\n`
-            const storyBeatPrompt2 = `The impulses I have so far are ${steps[index].impulses.map((s, i) => `${i + 1}: ${s}`).join('\n')}`;
-            const response = await getStoryBeatImpulse(storyBeatsStr + storyBeatPrompt + storyBeatPrompt2, apiKey);
+            const response = await getStoryBeatImpulse(
+                project.storyBeats,
+                previousStep?.index,
+                nextStep?.index,
+                index,
+                apiKey
+            );
             if (response === 401) {
                 dispatch(showDialogError(true));
             } else {dispatch(showDialogError(false));}
