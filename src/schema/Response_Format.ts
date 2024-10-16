@@ -38,18 +38,6 @@ export const UNIVERSAL_EMOTION_SCHEMA = z.object({
         .describe("an array of 5 enhanced emotions for a story beat")
 }).describe("an object used to analyse the core emotion and present creative, emotional impulses for the provided story beat")
 
-const question = z.object({
-    question: z.string().describe("The question that the story beat raises"),
-    question_story_beat_number: z.number().describe("The index / number of the current story beat"),
-    answer: z.string().describe("The answer that a later story beat gives to the question."),
-    answer_story_beat_number: z.number().describe("The story beat number of the later story beat that provides an answer for the question that the current story beat raises"),
-}).describe("Question raised or answered by the story beat")
-
-export const UNIVERSAL_QUESTION_SCHEMA = z.object({
-    questions_raised: z.array(question).describe("Array of questions that are raised by the story beat"),
-    questions_answered: z.array(question).describe("Array of questions that are answered by the story beat"),
-}).describe("An object that contains questions raised/answered by the current and/or later story beats")
-
 export const QUESTIONS_SCHEMA = z.object({
     questions_raised: z.array(
         z.object({

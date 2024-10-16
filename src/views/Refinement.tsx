@@ -10,12 +10,12 @@ import PaginationVersions from "../components/version/PaginationVersions.tsx";
 import {
     critiqueSentence,
     extendSentence,
-    getStoryBeatUniversalEmotion,
-    getStoryBeatUniversalQuestion,
+    storyBeatEmotion,
+    storyBeatQuestion,
     rephraseSentence,
     rewriteStoryBeat,
-    runAnalysis,
-    runCritique
+    storyBeatAnalysis,
+    storyBeatCritique
 } from "../api/openaiAPI.ts";
 import {StoryBeat} from "../types/StoryBeat";
 import {selectApiKey} from "../features/model/ModelSlice.ts";
@@ -28,6 +28,7 @@ import {v4 as uuidv4} from "uuid";
 import {ParsedChatCompletion} from "openai/resources/beta/chat/completions";
 import {Question} from "../types/Question";
 import {showDialogError} from "../features/drawer/DrawerSlice.ts";
+import {storyBeatSToString} from "../helper/StringHelper.ts";
 
 const Refinement = () => {
     const project = useSelector(selectCurrentProject);
@@ -179,86 +180,8 @@ const Refinement = () => {
             dispatch(updateStoryBeat({ projectId: project.id, storyBeat: storyBeat }));
         }
 
-        // if (!updateCondition) {
-        //     const newStoryBeat = (): StoryBeat => {
-        //         switch(menuItem) {
-        //             case MenuItem.EMOTION:
-        //                 return {
-        //                     ...selectedStep,
-        //                     emotionStage: MenuCardStage.SHOWN,
-        //                 };
-        //             case MenuItem.QUESTION:
-        //                 return {
-        //                     ...selectedStep,
-        //                     questionStage: MenuCardStage.SHOWN,
-        //                 };
-        //             case MenuItem.CRITIQUE:
-        //                 return {
-        //                     ...selectedStep,
-        //                     critiqueStage: MenuCardStage.SHOWN,
-        //                 };
-        //             case MenuItem.ANALYSE:
-        //                 return {
-        //                     ...selectedStep,
-        //                     analysisStage: MenuCardStage.SHOWN,
-        //                 };
-        //             default: return selectedStep;
-        //         }
-        //     }
-        //
-        //     const updatedStoryBeat: StoryBeat = newStoryBeat();
-        //     if (updatedStoryBeat) {
-        //         setSteps((prevSteps = []) =>
-        //             prevSteps.map((step, i) => (i === currentStepIndex ? updatedStoryBeat : step))
-        //         );
-        //
-        //         if (project && project.id) {
-        //             dispatch(updateStoryBeat({ projectId: project.id, storyBeat: updatedStoryBeat }));
-        //         }
-        //     }
-        //
-        //     return;
-        // }
         if (updateCondition) {
             setMenuSecondTitle(menuTitle);
-
-            // const newStoryBeat = (): StoryBeat => {
-            //     switch(menuItem) {
-            //         case MenuItem.EMOTION:
-            //             return {
-            //                 ...selectedStep,
-            //                 emotionStage: MenuCardStage.LOADING,
-            //             };
-            //         case MenuItem.QUESTION:
-            //             return {
-            //                 ...selectedStep,
-            //                 questionStage: MenuCardStage.LOADING,
-            //             };
-            //         case MenuItem.CRITIQUE:
-            //             return {
-            //                 ...selectedStep,
-            //                 critiqueStage: MenuCardStage.LOADING,
-            //             };
-            //         case MenuItem.ANALYSE:
-            //             return {
-            //                 ...selectedStep,
-            //                 analysisStage: MenuCardStage.LOADING,
-            //             };
-            //         default: return selectedStep;
-            //     }
-            // }
-            //
-            // const updatedStoryBeat: StoryBeat = newStoryBeat();
-            // if (updatedStoryBeat) {
-            //     setSteps((prevSteps = []) =>
-            //         prevSteps.map((step, i) => (i === currentStepIndex ? updatedStoryBeat : step))
-            //     );
-            //
-            //     if (project && project.id) {
-            //         dispatch(updateStoryBeat({ projectId: project.id, storyBeat: updatedStoryBeat }));
-            //     }
-            // }
-
             try {
                 setLoadingMenu(true);
                 const response = await apiFunction(prompt, apiKey);
@@ -294,8 +217,8 @@ const Refinement = () => {
         setLoadingStep(true);
 
         const prompt = `
-        "My story beats are:\\\\n ${project.storyBeats.map((s, i) => `${i + 1}: ${s.text}`).join('\n')}
-        The story beat I want you to rewrite is ${currentStepText}
+        "My story beats are:\n ${storyBeatSToString(project.storyBeats)}
+        The story beat you have to rewrite is ${currentStepText}
         `;
 
         handleMenuAction(
@@ -320,7 +243,7 @@ const Refinement = () => {
 
         const prompt = `
         This are my story beats:
-        ${project.storyBeats.map((s, i) => `${i + 1}: ${s.text}`).join('\n')}
+        ${storyBeatSToString(project.storyBeats)}
         
         I am searching for the core emotion / creative impulses for the story beat: ${currentStepIndex + 1}: ${currentStepText}
         `;
@@ -329,7 +252,7 @@ const Refinement = () => {
             MenuItem.EMOTION,
             'Analysing emotion',
             prompt,
-            getStoryBeatUniversalEmotion,
+            storyBeatEmotion,
             (response) => {
                 const emotionRes = response?.choices[0]?.message?.parsed ?? {
                     coreEmotion: '',
@@ -354,14 +277,14 @@ const Refinement = () => {
 
         const prompt = `
         I want to analyse the following story beat in terms of which questions it answers and which question it raises: ${currentStepIndex + 1}
-        My story beats are:\n ${project.storyBeats.map((s, i) => `${i + 1}: ${s.text}`).join('\n')}
+        My story beats are:\n ${storyBeatSToString(project.storyBeats)}
         `;
 
         handleMenuAction(
             MenuItem.QUESTION,
             'Finding questions',
             prompt,
-            getStoryBeatUniversalQuestion,
+            storyBeatQuestion,
             (response) => {
                 const questions = response?.choices[0]?.message?.parsed ?? {
                     questions_raised: [] as Question[],
@@ -399,14 +322,14 @@ selectedStep.questionStage === MenuCardStage.NEEDS_UPDATE || selectedStep.questi
 
         const prompt = `
         I am looking for a critique on the story beat: ${currentStepIndex}: ${currentStepText}
-        My story beats are:\n ${project.storyBeats.map((s, i) => `${i + 1}: ${s.text}`).join('\n')}
+        My story beats are:\n ${storyBeatSToString(project.storyBeats)}
         `;
 
         handleMenuAction(
             MenuItem.CRITIQUE,
             'Loading critique',
             prompt,
-            runCritique,
+            storyBeatCritique,
             (response) => {
                 const critiqueRes = response?.choices[0]?.message?.parsed ?? {
                     strength: '',
@@ -429,14 +352,14 @@ selectedStep.questionStage === MenuCardStage.NEEDS_UPDATE || selectedStep.questi
 
         const prompt = `
         I need an analysis for the story beat: ${currentStepIndex + 1}: ${currentStepText}
-        My story beats are:\n ${project.storyBeats.map((s, i) => `${i + 1}: ${s.text}`).join('\n')}
+        My story beats are:\n ${storyBeatSToString(project.storyBeats)}
         `;
 
         handleMenuAction(
             MenuItem.ANALYSE,
             'Loading analysis',
             prompt,
-            runAnalysis,
+            storyBeatAnalysis,
             (response) => {
                 const analysisRes = response?.choices[0]?.message?.parsed ?? {
                     incitingIncident: '',

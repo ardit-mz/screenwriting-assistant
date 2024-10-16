@@ -9,9 +9,11 @@ import {
     checkScriptConsistency,
     critiqueSentence,
     extendSentence,
-    rephraseSentence, runAnalysis, runCritique,
+    rephraseSentence,
+    screenplayAnalysis,
+    screenplayCritique,
     storyBeatsToScreenplay,
-    storyBeatsToTreatment
+    screenplayToTreatment
 } from "../api/openaiAPI.ts";
 import {Project} from "../types/Project";
 import {selectApiKey} from "../features/model/ModelSlice.ts";
@@ -29,6 +31,7 @@ import {showDialogError} from "../features/drawer/DrawerSlice.ts";
 import {ParsedChatCompletion} from "openai/resources/beta/chat/completions";
 import {Script} from "../types/Script";
 import {MenuCardStage} from "../enum/MenuCardStage.ts";
+import {storyBeatSToString} from "../helper/StringHelper.ts";
 
 const Export = () => {
     const dispatch = useDispatch<AppDispatch>();
@@ -66,7 +69,7 @@ const Export = () => {
     const fetchScreenplay = async (isRewrite: boolean = false) => {
         if (!project || !project.storyBeats) return;
 
-        const storyBeatsStr = "My story beats are:\\n" + project.storyBeats.map((s, i) => `${i + 1}: ${s.text}`).join('\n');
+        const storyBeatsStr = `My story beats are:\n ${storyBeatSToString(project.storyBeats)}`;
 
         try {
             const StoryBeatsToScreenplayRes = await storyBeatsToScreenplay(storyBeatsStr, apiKey);
@@ -125,7 +128,7 @@ const Export = () => {
         const prompt = `My screenplay is:\n ${script.screenplay}`
 
         try {
-            const storyBeatsToTreatmentRes = await storyBeatsToTreatment(prompt, apiKey);
+            const storyBeatsToTreatmentRes = await screenplayToTreatment(prompt, apiKey);
 
             if (typeof storyBeatsToTreatmentRes === 'number') {
                 if (storyBeatsToTreatmentRes === 401) dispatch(showDialogError(true));
@@ -238,7 +241,7 @@ const Export = () => {
             MenuItem.CRITIQUE,
             'Loading critique',
             prompt,
-            runCritique,
+            screenplayCritique,
             (response) => {
                 const critiqueRes = response?.choices[0]?.message?.parsed ?? {
                     strength: '',
@@ -266,7 +269,7 @@ const Export = () => {
             MenuItem.ANALYSE,
             'Loading analysis',
             prompt,
-            runAnalysis,
+            screenplayAnalysis,
             (response) => {
                 const analysisRes = response?.choices[0]?.message?.parsed ?? {
                     incitingIncident: '',

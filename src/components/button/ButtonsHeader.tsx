@@ -39,17 +39,12 @@ const ButtonsHeader = () => {
             .map(storyBeat => storyBeat.text)
             .join("\n")
 
-        const userMsg = `
-        Here is the brainstorming session text to base the story beats on:
-        ${project.brainstorm}
-        ${project?.uploadedText ? `\nAlso here are some more ideas for reference for style based on my other writing:\\n\\${project.uploadedText}\\n` : ''}
-        The total number of story beats is ${project.storyBeats.length}.
-        ${project.storyBeats.some(s => s.locked) ? "The following story beats are locked and should not be rewritten:\n" + lockedStoryBeats : 'There are no locked story beats.'}
-        
-        Please rewrite the story beats according to these guidelines while keeping the locked ones intact.
-        `
-
-        const newStoryBeatsResponse = await regenerateStoryBeats(userMsg, apiKey);
+        const newStoryBeatsResponse = await regenerateStoryBeats(
+            project.brainstorm,
+            project.storyBeats,
+            lockedStoryBeats,
+            apiKey,
+            project?.uploadedText);
 
         if (newStoryBeatsResponse === 401) {
             dispatch(showDialogError(true));
