@@ -2,7 +2,7 @@ import Box from "@mui/material/Box";
 // import Typography from "@mui/material/Typography";
 import {useDispatch, useSelector} from "react-redux";
 import {selectProjects, setRoute, updateProjectStage} from "../features/project/ProjectSlice.ts";
-import {selectApiKey, selectModel} from "../features/model/ModelSlice.ts";
+import {selectApiKey} from "../features/model/ModelSlice.ts";
 import {useEffect} from "react";
 import {ProjectStage} from "../enum/ProjectStage.ts";
 import {Button} from "@mui/material";
@@ -11,7 +11,6 @@ import {setShowAdd, setShowConfig} from "../features/drawer/DrawerSlice.ts";
 const InitialPage = () => {
     const projects = useSelector(selectProjects);
     const apiKey = useSelector(selectApiKey);
-    const model = useSelector(selectModel);
     const dispatch = useDispatch();
 
     useEffect(() => {
