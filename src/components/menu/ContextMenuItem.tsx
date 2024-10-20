@@ -102,7 +102,8 @@ const ContextMenuItem: React.FC<ContextMenuItemProps> = ({
                 <ListItemIcon> {icon} </ListItemIcon>
                 <ListItemText> {name} </ListItemText>
                 {
-                    showDescription && (isHovered || isClicked) &&
+                    // showDescription && (isHovered || isClicked) &&
+                    (showDescription || isHovered) &&
                     <ListItemText sx={{marginLeft: 3, color: '#888', flexGrow: 0}}
                                   primaryTypographyProps={{fontSize: '15px'}}>
                         {description}

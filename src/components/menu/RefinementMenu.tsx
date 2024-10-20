@@ -8,11 +8,11 @@ import QuestionMarkOutlinedIcon from "@mui/icons-material/QuestionMarkOutlined";
 import PriorityHighOutlinedIcon from "@mui/icons-material/PriorityHighOutlined";
 import AutoGraphOutlinedIcon from "@mui/icons-material/AutoGraphOutlined";
 import {MenuItem} from "../../enum/MenuItem.ts";
-import {StoryBeat} from "../../types/StoryBeat";
+import {StoryBeatVersion} from "../../types/StoryBeat";
 import {MenuCardStage} from "../../enum/MenuCardStage.ts";
 
 interface RefinementMenuProps {
-    selectedStep: StoryBeat;
+    selectedVersion: StoryBeatVersion;
     contextMenuRef: React.RefObject<HTMLDivElement>
     menuSecondTitle: string;
     selectedMenuItem: string | null;
@@ -25,7 +25,7 @@ interface RefinementMenuProps {
 }
 
 const RefinementMenu: React.FC<RefinementMenuProps> = ({
-                                                           selectedStep,
+                                                           selectedVersion,
                                                            contextMenuRef,
                                                            menuSecondTitle,
                                                            selectedMenuItem,
@@ -39,8 +39,11 @@ const RefinementMenu: React.FC<RefinementMenuProps> = ({
     const showDescription = (typeof menuWidth === 'number') ? (menuWidth > 350) : (parseFloat(menuWidth) > 450);
 
     const getDescription = (menuItem: MenuItem, stage: MenuCardStage, defaultText: string) => {
+        if (stage === MenuCardStage.NEEDS_UPDATE) {
+            return 'Click to update';
+        }
         if (selectedMenuItem === menuItem) {
-            return stage === MenuCardStage.NEEDS_UPDATE ? 'Click to update' : defaultText;
+            return defaultText;
         }
         return '';
     };
@@ -55,7 +58,7 @@ const RefinementMenu: React.FC<RefinementMenuProps> = ({
                              name="Emotion"
                              onClick={onEmotion}
                              showDescription={showDescription}
-                             description={getDescription(MenuItem.EMOTION, selectedStep.emotionStage, 'Analysis and enhancement suggestions')}
+                             description={getDescription(MenuItem.EMOTION, selectedVersion?.emotionStage, 'Analysis and enhancement suggestions')}
                              backgroundColor={SwaColor.greenLight}
                              active={!!selectedMenuItem && selectedMenuItem === MenuItem.EMOTION}/>
 
@@ -63,7 +66,7 @@ const RefinementMenu: React.FC<RefinementMenuProps> = ({
                              name="Question"
                              onClick={onQuestion}
                              showDescription={showDescription}
-                             description={getDescription(MenuItem.QUESTION, selectedStep.questionStage, 'Analyse raised questions and answers')}
+                             description={getDescription(MenuItem.QUESTION, selectedVersion?.questionStage, 'Analyse raised questions and answers')}
                              backgroundColor={SwaColor.orangeLight}
                              active={!!selectedMenuItem && selectedMenuItem === MenuItem.QUESTION}/>
 
@@ -71,7 +74,7 @@ const RefinementMenu: React.FC<RefinementMenuProps> = ({
                              name="Critique"
                              onClick={onCritique}
                              showDescription={showDescription}
-                             description={getDescription(MenuItem.CRITIQUE, selectedStep.critiqueStage, 'Critique the whole story beat')}
+                             description={getDescription(MenuItem.CRITIQUE, selectedVersion?.critiqueStage, 'Critique the whole story beat')}
                              backgroundColor={SwaColor.redLight}
                              active={!!selectedMenuItem && selectedMenuItem === MenuItem.CRITIQUE}/>
 
@@ -79,7 +82,7 @@ const RefinementMenu: React.FC<RefinementMenuProps> = ({
                              name="Analyse"
                              onClick={onAnalysis}
                              showDescription={showDescription}
-                             description={getDescription(MenuItem.ANALYSE, selectedStep.analysisStage, 'Analyse this story beat')}
+                             description={getDescription(MenuItem.ANALYSE, selectedVersion?.analysisStage, 'Analyse this story beat')}
                              backgroundColor={SwaColor.violetLight}
                              active={!!selectedMenuItem && selectedMenuItem === MenuItem.ANALYSE}/>
         </ContextMenu>

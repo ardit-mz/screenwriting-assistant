@@ -15,7 +15,7 @@ const initialState: ProjectState = {
     projects: [],
     currentProjectId: null,
     loading: false,
-    route: ProjectStage.BRAINSTORMING,
+    route: ProjectStage.INITIAL,
 };
 
 const ProjectSlice = createSlice({

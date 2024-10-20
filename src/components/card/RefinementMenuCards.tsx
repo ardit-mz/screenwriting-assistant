@@ -8,12 +8,12 @@ import AnalysisCard from "./AnalysisCard.tsx";
 import FloatingMenuAddCard from "./FloatingMenuAddCard.tsx";
 import FloatingMenuCard from "./FloatingMenuCard.tsx";
 import React from "react";
-import {StoryBeat} from "../../types/StoryBeat";
+import {StoryBeatVersion} from "../../types/StoryBeat";
 import {MenuCardStage} from "../../enum/MenuCardStage.ts";
 import Box from "@mui/material/Box";
 
 interface RefinementMenuCardsProps {
-    selectedStep: StoryBeat;
+    selectedVersion: StoryBeatVersion;
     selectedMenuItem: MenuItem | null,
     menuWidth: string | number,
     rephrasedSentence: string,
@@ -24,7 +24,7 @@ interface RefinementMenuCardsProps {
 }
 
 const RefinementMenuCards: React.FC<RefinementMenuCardsProps> = ({
-                                                 selectedStep,
+                                                 selectedVersion,
                                                  selectedMenuItem,
                                                  menuWidth,
                                                  rephrasedSentence,
@@ -39,46 +39,46 @@ const RefinementMenuCards: React.FC<RefinementMenuCardsProps> = ({
         (stage === MenuCardStage.SHOWN || stage === MenuCardStage.NEEDS_UPDATE) && data;
 
     const renderEmotionCard = () => {
-        if (isLoading(selectedStep.emotionStage)) {
+        if (isLoading(selectedVersion.emotionStage)) {
             return <EmotionSkeleton width={menuWidth}/>;
-        } else if (isReadyToShow(selectedStep.emotionStage, !!selectedStep.emotion) &&
-            !!selectedStep.emotion?.coreEmotion && !!selectedStep.emotion?.reason && !!selectedStep.emotion?.suggestions) {
-            return <EmotionCard coreEmotion={selectedStep.emotion.coreEmotion}
-                                reason={selectedStep.emotion.reason}
-                                suggestions={selectedStep.emotion.suggestions}/>;
+        } else if (isReadyToShow(selectedVersion.emotionStage, !!selectedVersion.emotion) &&
+            !!selectedVersion.emotion?.coreEmotion && !!selectedVersion.emotion?.reason && !!selectedVersion.emotion?.suggestions) {
+            return <EmotionCard coreEmotion={selectedVersion.emotion.coreEmotion}
+                                reason={selectedVersion.emotion.reason}
+                                suggestions={selectedVersion.emotion.suggestions}/>;
         }
     };
 
     const renderQuestionCard = () => {
-        if (isLoading(selectedStep.questionStage)) {
+        if (isLoading(selectedVersion.questionStage)) {
             return <QuestionSkeleton width={menuWidth}/>;
-        } else if (isReadyToShow(selectedStep.questionStage, !!selectedStep.questions) &&
-            ((!!selectedStep?.questions?.questions_raised && selectedStep.questions.questions_raised?.length > 0) ||
-                (!!selectedStep?.questions?.questions_answered && selectedStep.questions.questions_answered?.length > 0) ||
-                (!!selectedStep?.questions?.questions_unanswered && selectedStep.questions.questions_unanswered?.length > 0))) {
+        } else if (isReadyToShow(selectedVersion.questionStage, !!selectedVersion.questions) &&
+            ((!!selectedVersion?.questions?.questions_raised && selectedVersion.questions.questions_raised?.length > 0) ||
+                (!!selectedVersion?.questions?.questions_answered && selectedVersion.questions.questions_answered?.length > 0) ||
+                (!!selectedVersion?.questions?.questions_unanswered && selectedVersion.questions.questions_unanswered?.length > 0))) {
             return <QuestionCard onClick={onGoToStoryBeat}
-                                 questions={selectedStep.questions}/>;
+                                 questions={selectedVersion.questions}/>;
         }
     };
 
     const renderCritiqueCard = () => {
-        if (isLoading(selectedStep.critiqueStage)) {
+        if (isLoading(selectedVersion.critiqueStage)) {
             return <QuestionSkeleton width={menuWidth}/>;
-        } else if (isReadyToShow(selectedStep.critiqueStage, !!selectedStep.critique) && !!selectedStep?.critique) {
-            return <CritiqueCard strengths={selectedStep.critique.strength}
-                                 improvement={selectedStep.critique.improvementArea}
-                                 summary={selectedStep.critique.improvementSummary}/>;
+        } else if (isReadyToShow(selectedVersion.critiqueStage, !!selectedVersion.critique) && !!selectedVersion?.critique) {
+            return <CritiqueCard strengths={selectedVersion.critique.strength}
+                                 improvement={selectedVersion.critique.improvementArea}
+                                 summary={selectedVersion.critique.improvementSummary}/>;
         }
     };
 
     const renderAnalysisCard = () => {
-        if (isLoading(selectedStep.analysisStage)) {
+        if (isLoading(selectedVersion.analysisStage)) {
             return <QuestionSkeleton width={menuWidth}/>;
-        } else if (isReadyToShow(selectedStep.analysisStage, !!selectedStep.analysis) && !!selectedStep.analysis) {
-            return <AnalysisCard incident={selectedStep.analysis.incitingIncident}
-                                 characters={selectedStep.analysis.characterDevelopment}
-                                 themes={selectedStep.analysis.thematicImplications}
-                                 foreshadowing={selectedStep.analysis.narrativeForeshadowing}/>;
+        } else if (isReadyToShow(selectedVersion.analysisStage, !!selectedVersion.analysis) && !!selectedVersion.analysis) {
+            return <AnalysisCard incident={selectedVersion.analysis.incitingIncident}
+                                 characters={selectedVersion.analysis.characterDevelopment}
+                                 themes={selectedVersion.analysis.thematicImplications}
+                                 foreshadowing={selectedVersion.analysis.narrativeForeshadowing}/>;
         }
     };
 

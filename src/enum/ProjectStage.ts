@@ -4,4 +4,5 @@ export enum ProjectStage {
     REFINEMENT = "REFINEMENT",
     COMPLETION = "COMPLETION",
     ABOUT = "ABOUT",
+    INITIAL = "INITIAL",
 }

@@ -1,24 +1,24 @@
 import Box from "@mui/material/Box";
 import {useEffect, useRef, useState} from "react";
-import {Skeleton, StepLabel, TextField} from "@mui/material";
+import {Skeleton, StepLabel, TextField, Tooltip} from "@mui/material";
 import SwaStepIcon from "../icons/SwaStepIcon.tsx";
 import {useDispatch, useSelector} from "react-redux";
-import {selectCurrentProject, updateStoryBeat} from "../features/project/ProjectSlice.ts";
+import {selectCurrentProject, updateProject, updateStoryBeat} from "../features/project/ProjectSlice.ts";
 import {AppDispatch} from "../store.ts";
 import FloatingContextMenu from "../components/menu/FloatingContextMenu.tsx";
 import PaginationVersions from "../components/version/PaginationVersions.tsx";
 import {
     critiqueSentence,
     extendSentence,
-    storyBeatEmotion,
-    storyBeatQuestion,
     rephraseSentence,
     rewriteStoryBeat,
     storyBeatAnalysis,
-    storyBeatCritique
+    storyBeatCritique,
+    storyBeatEmotion,
+    storyBeatQuestion
 } from "../api/openaiAPI.ts";
 import {StoryBeat} from "../types/StoryBeat";
-import {selectApiKey} from "../features/model/ModelSlice.ts";
+import {selectApiKey, selectModel} from "../features/model/ModelSlice.ts";
 import {MenuItem} from "../enum/MenuItem.ts";
 import RefinementMenuCards from "../components/card/RefinementMenuCards.tsx";
 import RefinementMenu from "../components/menu/RefinementMenu.tsx";
@@ -29,11 +29,14 @@ import {ParsedChatCompletion} from "openai/resources/beta/chat/completions";
 import {Question} from "../types/Question";
 import {showDialogError} from "../features/drawer/DrawerSlice.ts";
 import {storyBeatSToString} from "../helper/StringHelper.ts";
+import IconButton from "@mui/material/IconButton";
+import InfoOutlinedIcon from "@mui/icons-material/InfoOutlined";
 
 const Refinement = () => {
     const project = useSelector(selectCurrentProject);
     const dispatch = useDispatch<AppDispatch>();
     const apiKey = useSelector(selectApiKey);
+    const model = useSelector(selectModel);
     const contextMenuRef = useRef<HTMLDivElement>(null);
     const textFieldContainerRef = useRef<HTMLDivElement>(null);
 
@@ -43,7 +46,7 @@ const Refinement = () => {
     const [currentStepText, setCurrentStepText] = useState<string>(steps ? steps[currentStepIndex].text : '');
     const [loadingMenu, setLoadingMenu] = useState<boolean>(false);
     const [loadingStep, setLoadingStep] = useState<boolean>(false);
-    const [currentVersionIndex, setCurrentVersionIndex] = useState<number>(0);
+    const [currentVersionIndex, setCurrentVersionIndex] = useState<number>(project?.storyBeats ? project?.storyBeats[currentStepIndex].selectedVersionId : 0);
     const [menuSecondTitle, setMenuSecondTitle] = useState<string>('');
     const [selectedMenuItem, setSelectedMenuItem] = useState<MenuItem | null>(null);
     const [highlightedText, setHighlightedText] = useState<string | null>(null);
@@ -54,7 +57,10 @@ const Refinement = () => {
 
     useEffect(() => {
         if (steps) {
-            const step = steps[currentStepIndex];
+            const step: StoryBeat = {...steps[currentStepIndex],
+                selectedVersionId: currentVersionIndex,
+                text: steps[currentStepIndex].versions[currentVersionIndex]?.text ?? '',
+            };
             const version = step?.versions[currentVersionIndex];
             setCurrentStepText(version?.text || '');
             setSelectedStep(step);
@@ -68,6 +74,27 @@ const Refinement = () => {
         }
     }, [contextMenuRef.current]);
 
+    const scriptNeedsUpdate = () => {
+        if (project?.script && !project.script.needsUpdate) {
+            dispatch(updateProject({
+                    ...project,
+                    script: {...project?.script, needsUpdate: true}
+                }
+            ))
+        }
+    }
+
+    const handleVersionChange = (versionIndex: number) => {
+        setCurrentVersionIndex(versionIndex);
+
+        if (project && project.id && selectedStep) {
+            dispatch(updateStoryBeat({
+                projectId: project.id,
+                storyBeat: {...selectedStep, selectedVersionId: versionIndex}
+            }));
+        }
+    }
+
     const handleStepTextChange = (newText: string) => {
         if (!steps || !selectedStep) return;
 
@@ -77,27 +104,27 @@ const Refinement = () => {
             ...selectedStep,
             text: newText,
             textUpdated: hasTextChanged,
-            versions: selectedStep.versions.map((version) =>
-                version.id === selectedStep.versions[currentVersionIndex].id
-                    ? {...version, text: newText}
-                    : version
+            versions: selectedStep.versions.map((version) => {
+                const updateStage = (stage: MenuCardStage) => (hasTextChanged && stage != MenuCardStage.UNINITIALIZED) ? MenuCardStage.NEEDS_UPDATE : stage;
+                return version.id === selectedStep.versions[currentVersionIndex].id
+                        ? {
+                            ...version,
+                            text: newText,
+                            emotionStage: updateStage(version.emotionStage),
+                            questionStage: updateStage(version.questionStage),
+                            critiqueStage: updateStage(version.critiqueStage),
+                            analysisStage: updateStage(version.analysisStage),
+                        }
+                        : version
+                }
             ),
-            emotionStage: MenuCardStage.NEEDS_UPDATE,
-            questionStage: MenuCardStage.NEEDS_UPDATE,
-            critiqueStage: MenuCardStage.NEEDS_UPDATE,
-            analysisStage: MenuCardStage.NEEDS_UPDATE,
         }
-
-        // const updatedSteps = steps.map((step, index) =>
-        //     index === currentStepIndex ? updatedStep : step
-        // );
-
-        // setCurrentStepText(newText);
-        // setSelectedStep(updatedStep);
-        // setSteps(updatedSteps);
+;
         setSteps((prevSteps = []) =>
             prevSteps.map((step, i) => (i === currentStepIndex ? updatedStep : step))
         );
+
+        if (hasTextChanged) scriptNeedsUpdate();
     };
 
     const handleStepTextBlur = () => {
@@ -106,46 +133,42 @@ const Refinement = () => {
         if (project && project.id) {
             dispatch(updateStoryBeat({
                 projectId: project.id,
-                storyBeat: selectedStep,
+                storyBeat: {...selectedStep, selectedVersionId: currentVersionIndex},
             }));
         }
     };
 
     const handlePrev = () => {
-        if (steps && currentStepIndex > 0) {
+        if (project && steps && currentStepIndex > 0) {
             const prevIndex = currentStepIndex - 1;
-            // const step = steps[prevIndex];
             setCurrentStepIndex(prevIndex);
-            // setCurrentStepText(step?.versions[prevIndex]?.text || step?.text || '');
-            // setSelectedStep(step);
+            setCurrentVersionIndex(project?.storyBeats[prevIndex].selectedVersionId);
             setSelectedMenuItem(null);
         }
     };
 
     const handleNext = () => {
-        if (steps && currentStepIndex < steps?.length - 1) {
+        if (project && steps && currentStepIndex < steps?.length - 1) {
             const nextIndex = currentStepIndex + 1;
-            // const step = steps[nextIndex];
             setCurrentStepIndex(nextIndex);
-            // setCurrentStepText(step?.versions[nextIndex]?.text || step?.text || '');
-            // setSelectedStep(step);
+            setCurrentVersionIndex(project?.storyBeats[nextIndex].selectedVersionId);
             setSelectedMenuItem(null);
         }
     };
 
     const goToStoryBeat = (index: number) => {
         if (!steps || index === currentStepIndex) return;
-
         setCurrentStepIndex(index);
-        // setSelectedStep(steps[index]);
-        // setCurrentStepText(steps[index].text);
     }
+
+    const shouldUpdateStage = (stage: MenuCardStage) =>
+        stage === MenuCardStage.NEEDS_UPDATE || stage === MenuCardStage.UNINITIALIZED;
 
     const handleMenuAction = async (
         menuItem: MenuItem,
         menuTitle: string,
         prompt: string,
-        apiFunction: (prompt: string, apiKey: string) =>  Promise<number | ParsedChatCompletion<null> | undefined>,
+        apiFunction: (prompt: string, apiKey: string, model: string) =>  Promise<number | ParsedChatCompletion<null> | undefined>,
         successHandler: (response: ParsedChatCompletion<null> | undefined) => StoryBeat,
         updateCondition: boolean,
     ) => {
@@ -154,18 +177,36 @@ const Refinement = () => {
         setSelectedMenuItem(menuItem);
 
         const createNewStoryBeat = (stage: MenuCardStage): StoryBeat => {
+            let stageKey = '';
             switch(menuItem) {
                 case MenuItem.EMOTION:
-                    return { ...selectedStep, emotionStage: stage };
+                    stageKey = 'emotionStage';
+                    break;
                 case MenuItem.QUESTION:
-                    return { ...selectedStep, questionStage: stage };
+                    stageKey = 'questionStage';
+                    break;
                 case MenuItem.CRITIQUE:
-                    return { ...selectedStep, critiqueStage: stage };
+                    stageKey = 'critiqueStage';
+                    break;
                 case MenuItem.ANALYSE:
-                    return { ...selectedStep, analysisStage: stage };
+                    stageKey ='analysisStage';
+                    break;
                 default:
                     return selectedStep;
             }
+
+            return {
+                ...selectedStep,
+                versions: selectedStep.versions.map((version, index) => {
+                    if (index === currentVersionIndex) {
+                        return {
+                            ...version,
+                            [stageKey]: stage
+                        };
+                    }
+                    return version;
+                }),
+            };
         };
 
         const storyBeat = createNewStoryBeat(
@@ -184,7 +225,7 @@ const Refinement = () => {
             setMenuSecondTitle(menuTitle);
             try {
                 setLoadingMenu(true);
-                const response = await apiFunction(prompt, apiKey);
+                const response = await apiFunction(prompt, apiKey, model);
 
                 if (typeof response === 'number') {
                     if (response === 401) dispatch(showDialogError(true));
@@ -231,11 +272,26 @@ const Refinement = () => {
                 return {
                     ...selectedStep,
                     text,
-                    versions: [...(selectedStep.versions || []), { id: uuidv4(), text }],
+                    selectedVersionId: selectedStep.versions.length,
+                    versions: [...(selectedStep.versions || []), {
+                        id: uuidv4(),
+                        text,
+                        questions: undefined,
+                        emotion: undefined,
+                        analysis: undefined,
+                        critique: undefined,
+                        questionStage: MenuCardStage.UNINITIALIZED,
+                        emotionStage: MenuCardStage.UNINITIALIZED,
+                        analysisStage: MenuCardStage.UNINITIALIZED,
+                        critiqueStage: MenuCardStage.UNINITIALIZED,
+                    }],
                 };
             },
-            true //not needed for rewrite
+            true // not needed for rewrite
         );
+
+        setCurrentVersionIndex(selectedStep.versions.length);
+        scriptNeedsUpdate();
     };
 
     const handleEmotion = () => {
@@ -258,17 +314,29 @@ const Refinement = () => {
                     coreEmotion: '',
                     reason: '',
                     suggestions: []};
+
+                const updatedVersions = selectedStep.versions.map((version, index) => {
+                    if (index === currentVersionIndex) {
+                        return {
+                            ...version,
+                            emotion: {
+                                coreEmotion: emotionRes.coreEmotion,
+                                reason: emotionRes.reason,
+                                suggestions: emotionRes.suggestions,
+                            },
+                            emotionStage: MenuCardStage.SHOWN,
+                        };
+                    }
+                    return version;
+                });
+
+
                 return {
                     ...selectedStep,
-                    emotion: {
-                        coreEmotion: emotionRes.coreEmotion,
-                        reason: emotionRes.reason,
-                        suggestions: emotionRes.suggestions,
-                    },
-                    emotionStage: MenuCardStage.SHOWN,
+                    versions: updatedVersions,
                 };
             },
-            selectedStep.emotionStage === MenuCardStage.NEEDS_UPDATE || selectedStep.emotionStage === MenuCardStage.UNINITIALIZED
+            shouldUpdateStage(selectedStep.versions[currentVersionIndex].emotionStage)
         );
     };
 
@@ -302,18 +370,28 @@ const Refinement = () => {
                 const questionsAnswered = filterQuestions(questions.questions_answered);
                 const questionsUnanswered = filterQuestions(questions.questions_unanswered);
 
+                const updatedVersions = selectedStep.versions.map((version, index) => {
+                    if (index === currentVersionIndex) {
+                        return {
+                            ...version,
+                            questions: {
+                                id: uuidv4(),
+                                questions_raised: questionsRaised,
+                                questions_answered: questionsAnswered,
+                                questions_unanswered: questionsUnanswered,
+                            },
+                            questionStage: MenuCardStage.SHOWN,
+                        };
+                    }
+                    return version;
+                });
+
                 return {
                     ...selectedStep,
-                    questions: {
-                        id: uuidv4(),
-                        questions_raised: questionsRaised,
-                        questions_answered: questionsAnswered,
-                        questions_unanswered: questionsUnanswered,
-                    },
-                    questionStage: MenuCardStage.SHOWN,
+                    versions: updatedVersions,
                 };
             },
-selectedStep.questionStage === MenuCardStage.NEEDS_UPDATE || selectedStep.questionStage === MenuCardStage.UNINITIALIZED
+            shouldUpdateStage(selectedStep.versions[currentVersionIndex].questionStage)
         );
     };
 
@@ -336,15 +414,27 @@ selectedStep.questionStage === MenuCardStage.NEEDS_UPDATE || selectedStep.questi
                     improvementArea: '',
                     improvementSummary: ''
                 };
+
+                const updatedVersions = selectedStep.versions.map((version, index) => {
+                    if (index === currentVersionIndex) {
+                        return {
+                            ...version,
+                            critique: critiqueRes,
+                            critiqueStage: MenuCardStage.SHOWN,
+                        };
+                    }
+                    return version;
+                });
+
                 return {
                     ...selectedStep,
+                    versions: updatedVersions,
                     critique: critiqueRes,
                     critiqueStage: MenuCardStage.SHOWN,
                 };
             },
-            selectedStep.critiqueStage === MenuCardStage.NEEDS_UPDATE || selectedStep.critiqueStage === MenuCardStage.UNINITIALIZED
-
-    );
+            shouldUpdateStage(selectedStep.versions[currentVersionIndex].critiqueStage)
+        );
     };
 
     const handleAnalysis = () => {
@@ -367,13 +457,24 @@ selectedStep.questionStage === MenuCardStage.NEEDS_UPDATE || selectedStep.questi
                     thematicImplications: '',
                     narrativeForeshadowing: ''
                 };
+
+                const updatedVersions = selectedStep.versions.map((version, index) => {
+                    if (index === currentVersionIndex) {
+                        return {
+                            ...version,
+                            analysis: analysisRes,
+                            analysisStage: MenuCardStage.SHOWN,
+                        };
+                    }
+                    return version;
+                });
+
                 return {
                     ...selectedStep,
-                    analysis: analysisRes,
-                    analysisStage: MenuCardStage.SHOWN,
+                    versions: updatedVersions,
                 };
             },
-            selectedStep.analysisStage === MenuCardStage.NEEDS_UPDATE || selectedStep.analysisStage === MenuCardStage.UNINITIALIZED
+            shouldUpdateStage(selectedStep.versions[currentVersionIndex].analysisStage)
         );
     };
 
@@ -387,7 +488,7 @@ selectedStep.questionStage === MenuCardStage.NEEDS_UPDATE || selectedStep.questi
         const context = `\nThis is the context/story beat for the sentence: ${currentStepText}`
 
         try {
-            const rephraseRes = await rephraseSentence(prompt + context, apiKey);
+            const rephraseRes = await rephraseSentence(prompt + context, apiKey, model);
 
             if (typeof rephraseRes === 'number') {
                 if (rephraseRes === 401) dispatch(showDialogError(true));
@@ -411,7 +512,7 @@ selectedStep.questionStage === MenuCardStage.NEEDS_UPDATE || selectedStep.questi
         const context = `\nThis is the context/story beat for the sentence: ${currentStepText}`
 
         try {
-            const extendedRes = await extendSentence(prompt + context, apiKey);
+            const extendedRes = await extendSentence(prompt + context, apiKey, model);
 
             if (typeof extendedRes === 'number') {
                 if (extendedRes === 401) dispatch(showDialogError(true));
@@ -435,7 +536,7 @@ selectedStep.questionStage === MenuCardStage.NEEDS_UPDATE || selectedStep.questi
         const context = `\nThis is the context/story beat for the sentence: ${currentStepText}`
 
         try {
-            const critiqueRes = await critiqueSentence(prompt + context, apiKey);
+            const critiqueRes = await critiqueSentence(prompt + context, apiKey, model);
 
             if (typeof critiqueRes === 'number') {
                 if (critiqueRes === 401) dispatch(showDialogError(true));
@@ -459,10 +560,19 @@ selectedStep.questionStage === MenuCardStage.NEEDS_UPDATE || selectedStep.questi
             ...selectedStep,
             text: newText,
             textUpdated: true,
-            versions: selectedStep.versions.map((version) =>
-                version.id === selectedStep.versions[currentVersionIndex].id
-                    ? {...version, text: newText}
-                    : version
+            versions: selectedStep.versions.map((version) => {
+                    const updateStage = (stage: MenuCardStage) => stage != MenuCardStage.UNINITIALIZED ? MenuCardStage.NEEDS_UPDATE : stage;
+                    return version.id === selectedStep.versions[currentVersionIndex].id
+                        ? {
+                            ...version,
+                            text: newText,
+                            emotionStage: updateStage(version.emotionStage),
+                            questionStage: updateStage(version.questionStage),
+                            critiqueStage: updateStage(version.critiqueStage),
+                            analysisStage: updateStage(version.analysisStage),
+                        }
+                        : version
+                }
             ),
         }
 
@@ -477,28 +587,18 @@ selectedStep.questionStage === MenuCardStage.NEEDS_UPDATE || selectedStep.questi
             projectId: project.id,
             storyBeat: updatedStep
         }))
+
+        scriptNeedsUpdate();
     }
 
     return (
         <Box sx={{
             flexGrow: 1,
-            // p: 3,
             display: 'flex',
             flexDirection: 'row',
             alignItems: 'start',
-            // marginTop: 3,
-            // maxWidth: 800
-            // display: 'flex',
-            // flexDirection: 'row',
-            // alignItems: 'start',
-            // mt: 4,
-            // mb: 4,
-            // mr: 8,
             width: '100%',
             height: 'calc(100% -162px)',
-            // overflow: 'hidden',
-            // position: 'relative'
-            // position: 'relative',
         }}>
             {(!!steps && steps.length > 0 && !!selectedStep)
                 ? <>
@@ -510,11 +610,6 @@ selectedStep.questionStage === MenuCardStage.NEEDS_UPDATE || selectedStep.questi
                         justifyContent: 'center',
                         mt: 5,
                         height: '554px',
-                        // width: '100px',
-                        // top:0,
-                        // bottom:0,
-                        // mb: '20px',
-                        // position: 'absolute',
                     }}>
                         {currentStepIndex > 0 &&
                             <NavigateToStepCard onClick={handlePrev} position={'left'}/>
@@ -524,17 +619,8 @@ selectedStep.questionStage === MenuCardStage.NEEDS_UPDATE || selectedStep.questi
                     {/* Middle */}
                     <Box style={{
                         display: 'flex',
-                        // flex: 1,
                         flexDirection: 'row',
                         alignItems: 'flex-start',
-                        // padding: 0,
-                        // backgroundColor: '',
-                        // boxShadow: "none",
-                        // width: '100%',
-                        // height: '100%',
-                        // overflow: 'hidden',
-                        // marginLeft: 160,
-                        // marginRight: 160,,
                         paddingLeft: 30,
                         paddingRight: 30,
                     }}
@@ -542,9 +628,6 @@ selectedStep.questionStage === MenuCardStage.NEEDS_UPDATE || selectedStep.questi
                         <Box style={{
                             display: 'flex',
                             flexDirection: 'column',
-                            // flex: 6,
-                            // height: '100%',
-                            // minWidth: '300px',
                             width: '100%',
                         }}>
                             <div style={{
@@ -556,13 +639,13 @@ selectedStep.questionStage === MenuCardStage.NEEDS_UPDATE || selectedStep.questi
 
                                 {steps[currentStepIndex].versions?.length > 1
                                     && <PaginationVersions totalPages={selectedStep.versions.length}
-                                                           onChange={(newPageIndex) => setCurrentVersionIndex(newPageIndex - 1)}
+                                                           onChange={(newPageIndex) => handleVersionChange(newPageIndex - 1)}
                                                            currentVersion={currentVersionIndex + 1}
                                                            disabled={loadingMenu}/>}
                             </div>
 
                             {loadingStep ? <Skeleton variant="rectangular" height={554} width={600} sx={{mt: 2}}/>
-                                : <Box ref={textFieldContainerRef} sx={{ height: '100%' }}>
+                                : <Box ref={textFieldContainerRef} sx={{ height: '100%', position: 'relative', width: 600, }}>
                                     <TextField fullWidth
                                                multiline
                                                margin={"normal"}
@@ -577,20 +660,26 @@ selectedStep.questionStage === MenuCardStage.NEEDS_UPDATE || selectedStep.questi
                                                    width: 600
                                                }}
                                     />
+                                    <Box sx={{
+                                        position: 'absolute',
+                                        bottom: 25,
+                                        right: 5,
+                                    }}>
+                                        <Tooltip title={"Highlight a sentence to see more options"}>
+                                            <IconButton sx={{p:0}}><InfoOutlinedIcon sx={{height: 18}} /></IconButton>
+                                        </Tooltip>
+                                    </Box>
                                 </Box>
                             }
                         </Box>
 
                         <Box sx={{
                             display: 'flex',
-                            // flex: 4,
                             flexDirection: 'column',
                             marginTop: 5,
-                            // height: '100%',
-                            // width: 500,
-                            // position: 'relative',
                         }}>
-                            <RefinementMenu selectedStep={selectedStep}
+                            {/*<Button>Update assistant results</Button>*/}
+                            <RefinementMenu selectedVersion={selectedStep.versions[currentVersionIndex]}
                                             contextMenuRef={contextMenuRef}
                                             menuSecondTitle={menuSecondTitle}
                                             selectedMenuItem={selectedMenuItem}
@@ -603,19 +692,11 @@ selectedStep.questionStage === MenuCardStage.NEEDS_UPDATE || selectedStep.questi
                             />
                             <Box sx={{
                                 mt: 2,
-                                // overflowY: 'auto',
-                                // height: '100%',
-                                // top: contextMenuRef?.current?.offsetHeight ?? 80,
-                                // bottom:0,
-                                // // mb: '0px',
-                                // position: 'absolute',
-                                // overflowY: 'auto',
-                                // height: '20%',
                                 mb: 2,
                                 width: 532,
-                            //     TODO only this part should be scrollable
+                                // TODO only this part should be scrollable
                             }}>
-                            <RefinementMenuCards selectedStep={selectedStep}
+                            <RefinementMenuCards selectedVersion={selectedStep.versions[currentVersionIndex]}
                                                  selectedMenuItem={selectedMenuItem}
                                                  menuWidth={menuWidth}
                                                  rephrasedSentence={rephrasedSentence}
@@ -636,18 +717,10 @@ selectedStep.questionStage === MenuCardStage.NEEDS_UPDATE || selectedStep.questi
 
                     {/* Right */}
                         <Box sx={{
-                            // flex: 1,
-                            // flexDirection: 'row',
                             display: 'flex',
                             mt: 5,
                             height: `554px`,
                             justifyContent: 'center',
-                            // width: '60px',
-                            // top:0,
-                            // right: 0,
-                            // bottom:0,
-                            // mb: '20px',
-                            // position: 'absolute',
                         }}>
                             {currentStepIndex < (steps.length - 1) &&
                                 <NavigateToStepCard onClick={handleNext} position={'right'}/>

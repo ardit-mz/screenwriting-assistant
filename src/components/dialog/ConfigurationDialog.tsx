@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, {useEffect, useState} from 'react';
 import Dialog from '@mui/material/Dialog';
 import DialogActions from '@mui/material/DialogActions';
 import DialogContent from '@mui/material/DialogContent';
@@ -9,7 +9,7 @@ import {FormControl, InputLabel, Link, MenuItem, Select, SelectChangeEvent} from
 import {Model} from '../../enum/Models.ts'
 import Typography from "@mui/material/Typography";
 import {useSelector} from "react-redux";
-import {selectApiKey} from "../../features/model/ModelSlice.ts";
+import {selectApiKey, selectModel} from "../../features/model/ModelSlice.ts";
 import {SwaColor} from "../../enum/SwaColor.ts";
 
 interface ConfigurationDialogProps {
@@ -20,9 +20,19 @@ interface ConfigurationDialogProps {
 }
 
 const ConfigurationDialog: React.FC<ConfigurationDialogProps> = ({ open, onClose, onSave, error }) => {
-    const aps = useSelector(selectApiKey);
+    const existingApiKey = useSelector(selectApiKey);
+    const existingModel = useSelector(selectModel);
     const [apiKey, setApiKey] = useState<string>('');
-    const [selectedModel, setSelectedModel] = useState<string>("GPT_4o");
+    const [selectedModel, setSelectedModel] = useState<string>("GPT_4o_mini");
+
+    useEffect(() => {
+        if (existingApiKey) {
+            setApiKey(existingApiKey);
+        }
+        if (existingModel) {
+            setSelectedModel(existingModel);
+        }
+    }, []);
 
     const handleKeyPress = (event: React.KeyboardEvent<HTMLDivElement>) => {
         if (event.key === 'Enter') {
@@ -72,8 +82,8 @@ const ConfigurationDialog: React.FC<ConfigurationDialogProps> = ({ open, onClose
                     label="API Key"
                     fullWidth
                     variant="outlined"
-                    // value={aps ?? apiKey}
-                    defaultValue={aps ?? apiKey}
+                    // value={existingApiKey ?? apiKey}
+                    defaultValue={existingApiKey ?? apiKey}
                     onChange={(e) => setApiKey(e.target.value)}
                     onKeyDown={handleKeyPress}
                     style={{margin:0}}

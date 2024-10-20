@@ -34,13 +34,13 @@ import {
     STORY_BEATS_SCREENPLAY,
     SYS_SCREENPLAY_ANALYSIS,
     SYS_SCREENPLAY_CONSISTENCY_CHECK,
-    SYS_SCREENPLAY_CRITIQUE
+    SYS_SCREENPLAY_CRITIQUE, UPDATE_SCREENPLAY
 } from "../prompts/PromptsCompletion.ts";
 import {SYS_CRITIQUE_SENTENCE, SYS_EXTEND, SYS_REPHRASE} from "../prompts/PromptsHighlightedText.ts";
 
 /* Brainstorming */
 
-export function getSuggestions(prompt: string, apiKey: string) {
+export function getSuggestions(prompt: string, apiKey: string, model: string) {
     const res_format = zodResponseFormat(
         SUGGESTIONS_SCHEMA,
         "suggestions"
@@ -49,7 +49,8 @@ export function getSuggestions(prompt: string, apiKey: string) {
         USR_SUGGESTIONS(prompt),
         SYS_SUGGESTIONS,
         res_format,
-        apiKey
+        apiKey,
+        model
     )
     console.log("openaiService getSuggestions", res);
     return res;
@@ -58,7 +59,7 @@ export function getSuggestions(prompt: string, apiKey: string) {
 
 /* Structure */
 
-export function getStoryBeatsFromBrainstorming(prompt: string, apiKey: string, uploadedText: string = '') {
+export function getStoryBeatsFromBrainstorming(prompt: string, apiKey: string, model: string, uploadedText: string = '') {
     const res_format = zodResponseFormat(
         STORY_BEATS_SCHEMA,
         "story_beats"
@@ -67,13 +68,14 @@ export function getStoryBeatsFromBrainstorming(prompt: string, apiKey: string, u
         USR_BRAINSTORM_TO_STORY_BEATS(prompt, uploadedText),
         SYS_BRAINSTORM_TO_STORY_BEATS,
         res_format,
-        apiKey
+        apiKey,
+        model
     )
     console.log("openaiService getStoryBeatsFromBrainstorming", res);
     return res;
 }
 
-export function regenerateStoryBeats(brainstorming: string, storyBeats: StoryBeat[], lockedStoryBeats: string, apiKey: string, uploadedText: string = '') {
+export function regenerateStoryBeats(brainstorming: string, storyBeats: StoryBeat[], lockedStoryBeats: string, apiKey: string, model: string, uploadedText: string = '') {
     const res_format = zodResponseFormat(
         REWRITE_STORY_BEATS_SCHEMA,
         "story_beats"
@@ -82,12 +84,14 @@ export function regenerateStoryBeats(brainstorming: string, storyBeats: StoryBea
         USR_REWRITE_STORY_BEATS(brainstorming, uploadedText, storyBeats, lockedStoryBeats),
         SYS_REWRITE_STORY_BEATS,
         res_format,
-        apiKey)
+        apiKey,
+        model
+    )
     console.log("openaiService regenerateStoryBeats", res);
     return res;
 }
 
-export function getStoryBeatImpulse(storyBeats: StoryBeat[], prevIndex: number | undefined, nextIndex: number | undefined, currentIndex: number | undefined, apiKey: string) {
+export function getStoryBeatImpulse(storyBeats: StoryBeat[], prevIndex: number | undefined, nextIndex: number | undefined, currentIndex: number | undefined, apiKey: string, model: string) {
     const res_format = zodResponseFormat(
         IMPULSES_SCHEMA,
         "impulses"
@@ -96,28 +100,32 @@ export function getStoryBeatImpulse(storyBeats: StoryBeat[], prevIndex: number |
         USR_IMPULSES(storyBeats, prevIndex, nextIndex, currentIndex),
         SYS_IMPULSES,
         res_format,
-        apiKey)
+        apiKey,
+        model
+    )
     console.log("openaiService getStoryBeatImpulse", res);
     return res;
 }
 
-export function rewriteStoryBeat(prompt: string, apiKey: string) {
+export function rewriteStoryBeat(prompt: string, apiKey: string, model: string) {
     const res = getOpenAIRes(
         prompt,
         SYS_REWRITE_STORY_BEAT,
         undefined,
-        apiKey
+        apiKey,
+        model
     )
     console.log("openaiService rewriteStoryBeat", res);
     return res;
 }
 
-export function rewriteStoryBeatImpulse(prompt: string, apiKey: string) {
+export function rewriteStoryBeatImpulse(prompt: string, apiKey: string, model: string) {
     const res = getOpenAIRes(
         prompt,
         SYS_REPHRASE_IMPULSE,
         undefined,
-        apiKey
+        apiKey,
+        model
     )
     console.log("openaiService rewriteStoryBeatImpulse", res);
     return res;
@@ -126,7 +134,7 @@ export function rewriteStoryBeatImpulse(prompt: string, apiKey: string) {
 
 /* Refinement */
 
-export function storyBeatEmotion(prompt: string, apiKey: string) {
+export function storyBeatEmotion(prompt: string, apiKey: string, model: string) {
     const res_format = zodResponseFormat(
         UNIVERSAL_EMOTION_SCHEMA,
         "universalEmotions"
@@ -135,13 +143,14 @@ export function storyBeatEmotion(prompt: string, apiKey: string) {
         prompt,
         SYS_STORY_BEAT_EMOTION,
         res_format,
-        apiKey
+        apiKey,
+        model
     )
     console.log("openaiService storyBeatEmotion", res);
     return res;
 }
 
-export function storyBeatQuestion(prompt: string, apiKey: string) {
+export function storyBeatQuestion(prompt: string, apiKey: string, model: string) {
     const res_format = zodResponseFormat(
         QUESTIONS_SCHEMA,
         "universalQuestion"
@@ -150,13 +159,14 @@ export function storyBeatQuestion(prompt: string, apiKey: string) {
         prompt,
         SYS_STORY_BEAT_QUESTION,
         res_format,
-        apiKey
+        apiKey,
+        model
     )
     console.log("openaiService storyBeatQuestion", res);
     return res;
 }
 
-export function storyBeatCritique(prompt: string, apiKey: string) {
+export function storyBeatCritique(prompt: string, apiKey: string, model: string) {
     const res_format = zodResponseFormat(
         CRITIQUE_SCHEMA('story beat'),
         "critique"
@@ -165,13 +175,14 @@ export function storyBeatCritique(prompt: string, apiKey: string) {
         prompt,
         SYS_STORY_BEAT_CRITIQUE,
         res_format,
-        apiKey
+        apiKey,
+        model
     )
     console.log("openaiService storyBeatCritique", res);
     return res;
 }
 
-export function storyBeatAnalysis(prompt: string, apiKey: string) {
+export function storyBeatAnalysis(prompt: string, apiKey: string, model: string) {
     const res_format = zodResponseFormat(
         ANALYSIS_SCHEMA('story beat'),
         "analysis"
@@ -180,7 +191,8 @@ export function storyBeatAnalysis(prompt: string, apiKey: string) {
         prompt,
         SYS_STORY_BEAT_ANALYSIS,
         res_format,
-        apiKey
+        apiKey,
+        model
     )
     console.log("openaiService storyBeatAnalysis", res);
     return res;
@@ -189,34 +201,37 @@ export function storyBeatAnalysis(prompt: string, apiKey: string) {
 
 /* Highlighted Text*/
 
-export function rephraseSentence(prompt: string, apiKey: string) {
+export function rephraseSentence(prompt: string, apiKey: string, model: string) {
     const res = getOpenAIRes(
         prompt,
         SYS_REPHRASE,
         undefined,
-        apiKey
+        apiKey,
+        model
     )
     console.log("openaiService rephraseSentence", res);
     return res;
 }
 
-export function extendSentence(prompt: string, apiKey: string) {
+export function extendSentence(prompt: string, apiKey: string, model: string) {
     const res = getOpenAIRes(
         prompt,
         SYS_EXTEND,
         undefined,
-        apiKey
+        apiKey,
+        model
     )
     console.log("openaiService extendSentence", res);
     return res;
 }
 
-export function critiqueSentence(prompt: string, apiKey: string) {
+export function critiqueSentence(prompt: string, apiKey: string, model: string) {
     const res = getOpenAIRes(
         prompt,
         SYS_CRITIQUE_SENTENCE,
         undefined,
-        apiKey
+        apiKey,
+        model
     )
     console.log("openaiService critiqueSentence", res);
     return res;
@@ -225,29 +240,43 @@ export function critiqueSentence(prompt: string, apiKey: string) {
 
 /* Completion */
 
-export function storyBeatsToScreenplay(prompt: string, apiKey: string) {
+export function storyBeatsToScreenplay(prompt: string, apiKey: string, model: string) {
     const res = getOpenAIRes(
         prompt,
         STORY_BEATS_SCREENPLAY,
         undefined,
-        apiKey
+        apiKey,
+        model
     )
     console.log("openaiService storyBeatsToScreenplay", res);
     return res;
 }
 
-export function screenplayToTreatment(prompt: string, apiKey: string) {
+export function updateScreenplay(prompt: string, apiKey: string, model: string) {
+    const res = getOpenAIRes(
+        prompt,
+        UPDATE_SCREENPLAY,
+        undefined,
+        apiKey,
+        model
+    )
+    console.log("openaiService updateScreenplay", res);
+    return res;
+}
+
+export function screenplayToTreatment(prompt: string, apiKey: string, model: string) {
     const res = getOpenAIRes(
         prompt,
         SCREENPLAY_TREATMENT,
         undefined,
-        apiKey
+        apiKey,
+        model
     )
     console.log("openaiService storyBeatsToTreatment", res);
     return res;
 }
 
-export function screenplayCritique(prompt: string, apiKey: string) {
+export function screenplayCritique(prompt: string, apiKey: string, model: string) {
     const res_format = zodResponseFormat(
         CRITIQUE_SCHEMA('screenplay'),
         "critique"
@@ -256,13 +285,14 @@ export function screenplayCritique(prompt: string, apiKey: string) {
         prompt,
         SYS_SCREENPLAY_CRITIQUE,
         res_format,
-        apiKey
+        apiKey,
+        model
     )
     console.log("openaiService screenplayCritique", res);
     return res;
 }
 
-export function screenplayAnalysis(prompt: string, apiKey: string) {
+export function screenplayAnalysis(prompt: string, apiKey: string, model: string) {
     const res_format = zodResponseFormat(
         ANALYSIS_SCHEMA('screenplay'),
         "analysis"
@@ -271,13 +301,14 @@ export function screenplayAnalysis(prompt: string, apiKey: string) {
         prompt,
         SYS_SCREENPLAY_ANALYSIS,
         res_format,
-        apiKey
+        apiKey,
+        model
     )
     console.log("openaiService screenplayAnalysis", res);
     return res;
 }
 
-export function checkScriptConsistency(prompt: string, apiKey: string) {
+export function checkScriptConsistency(prompt: string, apiKey: string, model: string) {
     const res_format = zodResponseFormat(
         CONSISTENCY_SCHEMA,
         "consistency"
@@ -286,7 +317,8 @@ export function checkScriptConsistency(prompt: string, apiKey: string) {
         prompt,
         SYS_SCREENPLAY_CONSISTENCY_CHECK,
         res_format,
-        apiKey
+        apiKey,
+        model
     )
     console.log("openaiService checkScriptConsistency", res);
     return res;

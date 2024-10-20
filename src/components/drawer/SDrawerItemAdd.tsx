@@ -1,9 +1,9 @@
-import React, {useState} from 'react';
+import React, {useEffect, useState} from 'react';
 import ListItem from '@mui/material/ListItem';
 import ListItemButton from '@mui/material/ListItemButton';
 import ListItemIcon from '@mui/material/ListItemIcon';
 import AddIcon from '@mui/icons-material/Add';
-import {useDispatch} from "react-redux";
+import {useDispatch, useSelector} from "react-redux";
 import {AppDispatch } from "../../store.ts";
 import {Project} from "../../types/Project";
 import {addProject, setCurrentProject } from "../../features/project/ProjectSlice.ts";
@@ -12,6 +12,7 @@ import { v4 as uuidv4 } from 'uuid';
 import ListItemText from "@mui/material/ListItemText";
 import AddDialog from "../dialog/AddDialog.tsx";
 import {handleBlurBackground} from "../../features/theme/ThemeSlice.ts";
+import {selectShowAdd, setShowAdd} from "../../features/drawer/DrawerSlice.ts";
 
 
 interface DrawerItemProps {
@@ -21,6 +22,13 @@ interface DrawerItemProps {
 const DrawerItem: React.FC<DrawerItemProps> = ({ open }) => {
     const dispatch = useDispatch<AppDispatch>();
     const [dialogOpen, setDialogOpen] = useState(false);
+    const showAdd = useSelector(selectShowAdd);
+
+    useEffect(() => {
+        if (showAdd) {
+            handleAddProject();
+        }
+    }, [showAdd]);
 
     const handleAddProject = () => {
         setDialogOpen(true);
@@ -29,7 +37,8 @@ const DrawerItem: React.FC<DrawerItemProps> = ({ open }) => {
 
     const handleClose = () => {
         setDialogOpen(false);
-        dispatch(handleBlurBackground(false))
+        dispatch(handleBlurBackground(false));
+        dispatch(setShowAdd(false));
     };
 
     const handleSave = (projectName: string) => {
@@ -48,7 +57,8 @@ const DrawerItem: React.FC<DrawerItemProps> = ({ open }) => {
         dispatch(addProject(newProject));
         dispatch(setCurrentProject(projectId))
         setDialogOpen(false);
-        dispatch(handleBlurBackground(false))
+        dispatch(handleBlurBackground(false));
+        dispatch(setShowAdd(false));
     };
 
     return (

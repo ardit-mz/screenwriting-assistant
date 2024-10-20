@@ -9,11 +9,11 @@ import LockOpenIcon from '@mui/icons-material/LockOpen';
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import ArrowForwardIcon from "@mui/icons-material/ArrowForward";
 import AddStepConnector from "./SwaStepConnector.tsx";
-import {StoryBeat} from "../../types/StoryBeat";
+import {StoryBeat, StoryBeatVersion} from "../../types/StoryBeat";
 import {useDispatch, useSelector} from "react-redux";
 import {AppDispatch} from "../../store.ts";
 import {
-    selectCurrentProject, selectLoading,
+    selectCurrentProject, selectLoading, updateProject,
     updateStoryBeat,
     updateStoryBeatImpulses,
     updateStoryBeats
@@ -26,7 +26,7 @@ import {getStoryBeatImpulse, rewriteStoryBeat, rewriteStoryBeatImpulse} from "..
 import SwaStepSkeleton from "../skeleton/SwaStepSkeleton.tsx";
 import ImpulseSkeleton from "../skeleton/ImpulseSkeleton.tsx";
 import {useSortable} from "@dnd-kit/sortable";
-import {selectApiKey} from "../../features/model/ModelSlice.ts";
+import {selectApiKey, selectModel} from "../../features/model/ModelSlice.ts";
 import DragIndicatorIcon from '@mui/icons-material/DragIndicator';
 import IconButton from "@mui/material/IconButton";
 import {MenuCardStage} from "../../enum/MenuCardStage.ts";
@@ -49,6 +49,7 @@ const SwaStep: React.FC<SwaStepProps> = ({id, index, steps, setSteps, onBlur, on
     const project = useSelector(selectCurrentProject)
     const isLoading = useSelector(selectLoading);
     const apiKey = useSelector(selectApiKey);
+    const model = useSelector(selectModel);
     const textFieldRef = useRef<HTMLDivElement>(null);
 
     const [completed] = useState<{ [k: number]: boolean }>({});
@@ -78,6 +79,27 @@ const SwaStep: React.FC<SwaStepProps> = ({id, index, steps, setSteps, onBlur, on
         onFocus();
     };
 
+    const scriptNeedsUpdate = () => {
+        if (project?.script && !project.script.needsUpdate) {
+            dispatch(updateProject({
+                    ...project,
+                    script: {...project?.script, needsUpdate: true}
+                }
+            ))
+        }
+    }
+
+    const handleVersionChange = (versionIndex: number) => {
+        setCurrentVersionIndex(versionIndex);
+
+        if (project && project.id) {
+            dispatch(updateStoryBeat({
+                projectId: project.id,
+                storyBeat: {...steps[index], selectedVersionId: versionIndex}
+            }));
+        }
+    }
+
     const toggleLock = () => {
         if (!steps) return;
 
@@ -106,7 +128,7 @@ const SwaStep: React.FC<SwaStepProps> = ({id, index, steps, setSteps, onBlur, on
             The story beat you have to rewrite is ${steps[index].text}.
             `;
 
-            const response = await rewriteStoryBeat(promptRewriteStoryBeat, apiKey);
+            const response = await rewriteStoryBeat(promptRewriteStoryBeat, apiKey, model);
 
             if (typeof response === 'number') {
                 if (response === 401) dispatch(showDialogError(true));
@@ -114,12 +136,26 @@ const SwaStep: React.FC<SwaStepProps> = ({id, index, steps, setSteps, onBlur, on
                 dispatch(showDialogError(false));
                 const text = response?.choices[0]?.message?.content ?? "";
 
-                const rewrittenStoryBeat = {
+                const newStoryBeatVersion: StoryBeatVersion = {
+                    id: uuidv4(),
+                    text: text,
+                    questions: undefined,
+                    emotion: undefined,
+                    analysis: undefined,
+                    critique: undefined,
+                    questionStage: MenuCardStage.UNINITIALIZED,
+                    emotionStage: MenuCardStage.UNINITIALIZED,
+                    analysisStage: MenuCardStage.UNINITIALIZED,
+                    critiqueStage: MenuCardStage.UNINITIALIZED,
+                }
+
+                const rewrittenStoryBeat: StoryBeat = {
                     ...steps[index],
                     text: text,
+                    selectedVersionId: steps[index].versions.length,
                     versions: [
                         ...(steps[index].versions || []),
-                        {id: uuidv4(), text: text},
+                        newStoryBeatVersion,
                     ],
                 };
 
@@ -134,7 +170,8 @@ const SwaStep: React.FC<SwaStepProps> = ({id, index, steps, setSteps, onBlur, on
                     storyBeat: rewrittenStoryBeat
                 }))
 
-                setCurrentVersionIndex(steps[index].versions.length)
+                setCurrentVersionIndex(steps[index].versions.length);
+                scriptNeedsUpdate();
             }
         } catch (error) {
             console.error("Error fetching impulses for the new step:", error);
@@ -164,6 +201,8 @@ const SwaStep: React.FC<SwaStepProps> = ({id, index, steps, setSteps, onBlur, on
                 storyBeats: updatedSteps
             }));
         }
+
+        scriptNeedsUpdate();
     };
 
     const moveRight = () => {
@@ -180,6 +219,8 @@ const SwaStep: React.FC<SwaStepProps> = ({id, index, steps, setSteps, onBlur, on
                 storyBeats: updatedSteps
             }));
         }
+
+        scriptNeedsUpdate();
     };
 
     const removeStep = () => {
@@ -194,6 +235,8 @@ const SwaStep: React.FC<SwaStepProps> = ({id, index, steps, setSteps, onBlur, on
                 storyBeats: updatedSteps
             }));
         }
+
+        scriptNeedsUpdate();
     };
 
     const handleStepTextChange = (newText: string) => {
@@ -202,9 +245,15 @@ const SwaStep: React.FC<SwaStepProps> = ({id, index, steps, setSteps, onBlur, on
         const updatedSteps = steps.map((step, i) => {
             if (i === index) {
                 if (step.versions && step.versions[currentVersionIndex]) {
+                    const currVersion = step.versions[currentVersionIndex];
+                    const updateStage = (stage: MenuCardStage) => stage === MenuCardStage.UNINITIALIZED ? stage : MenuCardStage.NEEDS_UPDATE;
                     const updatedVersion = {
-                        ...step.versions[currentVersionIndex],
-                        text: newText
+                        ...currVersion,
+                        text: newText,
+                        emotionStage: updateStage(currVersion.emotionStage),
+                        questionStage: updateStage(currVersion.questionStage),
+                        analysisStage: updateStage(currVersion.analysisStage),
+                        critiqueStage: updateStage(currVersion.critiqueStage),
                     };
 
                     const updatedVersions = [
@@ -230,6 +279,13 @@ const SwaStep: React.FC<SwaStepProps> = ({id, index, steps, setSteps, onBlur, on
         }
     };
 
+    const handleBlur = (e: React.FocusEvent<HTMLTextAreaElement | HTMLInputElement, Element>) => {
+        if (onBlur) onBlur(e);
+        setActive(false);
+        const hasTextChanged = steps[index].text.replace(/\s+/g, '') !== e.target.value.replace(/\s+/g, '');
+        if (hasTextChanged) scriptNeedsUpdate();
+    }
+
     const addStep = async () => {
         if (!project || !steps) return;
 
@@ -239,6 +295,20 @@ const SwaStep: React.FC<SwaStepProps> = ({id, index, steps, setSteps, onBlur, on
         const nextStep = steps[index + 1];
 
         const id = uuidv4();
+
+        const newStoryBeatVersion: StoryBeatVersion = {
+            id: id,
+            text: "",
+            questions: undefined,
+            emotion: undefined,
+            analysis: undefined,
+            critique: undefined,
+            questionStage: MenuCardStage.UNINITIALIZED,
+            emotionStage: MenuCardStage.UNINITIALIZED,
+            analysisStage: MenuCardStage.UNINITIALIZED,
+            critiqueStage: MenuCardStage.UNINITIALIZED,
+        }
+
         const newStoryBeat: StoryBeat = {
             id: id,
             text: "",
@@ -246,16 +316,17 @@ const SwaStep: React.FC<SwaStepProps> = ({id, index, steps, setSteps, onBlur, on
             index: index + 1,
             impulses: [],
             impulseStage: MenuCardStage.LOADING,
-            versions: [{id: id, text: ""}],
-            questions: undefined,
-            questionStage: MenuCardStage.UNINITIALIZED,
-            emotion: undefined,
-            emotionStage: MenuCardStage.UNINITIALIZED,
-            project: project,
-            analysis: undefined,
-            analysisStage: MenuCardStage.UNINITIALIZED,
-            critique: undefined,
-            critiqueStage: MenuCardStage.UNINITIALIZED,
+            versions: [newStoryBeatVersion],
+            selectedVersionId: 0,
+            // questions: undefined,
+            // questionStage: MenuCardStage.UNINITIALIZED,
+            // emotion: undefined,
+            // emotionStage: MenuCardStage.UNINITIALIZED,
+            projectId: project.id,
+            // analysis: undefined,
+            // analysisStage: MenuCardStage.UNINITIALIZED,
+            // critique: undefined,
+            // critiqueStage: MenuCardStage.UNINITIALIZED,
         }
 
         const updatedSteps = [
@@ -278,7 +349,8 @@ const SwaStep: React.FC<SwaStepProps> = ({id, index, steps, setSteps, onBlur, on
                 previousStep?.index,
                 nextStep?.index,
                 undefined,
-                apiKey
+                apiKey,
+                model
             );
 
             if (response === 401) { dispatch(showDialogError(true));}
@@ -290,8 +362,8 @@ const SwaStep: React.FC<SwaStepProps> = ({id, index, steps, setSteps, onBlur, on
                 ...newStoryBeat,
                 impulses: impulses,
                 impulseStage: MenuCardStage.SHOWN,
-                questionStage: MenuCardStage.HIDDEN,
-                emotionStage: MenuCardStage.HIDDEN
+                // questionStage: MenuCardStage.HIDDEN, // TODO check if needed
+                // emotionStage: MenuCardStage.HIDDEN
             };
 
             const finalUpdatedSteps = [
@@ -326,8 +398,16 @@ const SwaStep: React.FC<SwaStepProps> = ({id, index, steps, setSteps, onBlur, on
     const handleAddImpulse = (impulse: string) => {
         if (!steps) return;
 
+
         const updatedSteps = steps.map((step, i) =>
-            i === index ? {...step, text: impulse, impulses: [], impulseStage: MenuCardStage.HIDDEN} : step
+            i === index
+                ? {...step,
+                    text: impulse,
+                    impulses: [],
+                    impulseStage: MenuCardStage.HIDDEN,
+                    versions: [{...step.versions[0], text: impulse}]
+                }
+                : step
         );
         setSteps(updatedSteps);
 
@@ -337,6 +417,8 @@ const SwaStep: React.FC<SwaStepProps> = ({id, index, steps, setSteps, onBlur, on
                 storyBeat: updatedSteps[index]
             }));
         }
+
+        scriptNeedsUpdate();
     };
 
     const handleRewriteImpulse = async (impulseIndex: number, impulse: string) => {
@@ -347,7 +429,7 @@ const SwaStep: React.FC<SwaStepProps> = ({id, index, steps, setSteps, onBlur, on
             [impulseIndex]: true,
         }));
 
-        const response = await rewriteStoryBeatImpulse(impulse, apiKey);
+        const response = await rewriteStoryBeatImpulse(impulse, apiKey, model);
 
         if (typeof response === 'number') {
             if (response === 401) dispatch(showDialogError(true));
@@ -409,7 +491,8 @@ const SwaStep: React.FC<SwaStepProps> = ({id, index, steps, setSteps, onBlur, on
                 previousStep?.index,
                 nextStep?.index,
                 index,
-                apiKey
+                apiKey,
+                model
             );
             if (response === 401) {
                 dispatch(showDialogError(true));
@@ -485,7 +568,7 @@ const SwaStep: React.FC<SwaStepProps> = ({id, index, steps, setSteps, onBlur, on
                     {steps[index].versions?.length > 1 &&
                         <PaginationVersions totalPages={steps[index].versions?.length}
                                             currentVersion={currentVersionIndex + 1}
-                                            onChange={(newPageIndex) => setCurrentVersionIndex(newPageIndex - 1)}
+                                            onChange={(newPageIndex) => handleVersionChange(newPageIndex - 1)}
                                             style={{justifyContent: "end", marginTop: 0}}/>}
 
                     <DeleteIconButton onClick={() => removeStep()}
@@ -500,10 +583,7 @@ const SwaStep: React.FC<SwaStepProps> = ({id, index, steps, setSteps, onBlur, on
                        variant='outlined'
                        value={steps[index].versions?.[currentVersionIndex]?.text || steps[index].text || ''}
                        disabled={steps[index].locked ?? steps[index].locked}
-                       onBlur={(e) => {
-                           if (onBlur) onBlur(e);
-                           setActive(false)
-                       }}
+                       onBlur={(e) => handleBlur(e)}
                        onFocus={handleFocus}
                        InputProps={{style: {color: focused ? '#777777' : '#3E3E3E'}}}
                        onChange={(e) => handleStepTextChange(e.target.value)}

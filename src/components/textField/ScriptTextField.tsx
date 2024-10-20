@@ -1,27 +1,30 @@
 import Box from "@mui/material/Box";
 import PaginationVersions from "../version/PaginationVersions.tsx";
 import Typography from "@mui/material/Typography";
-import {TextField} from "@mui/material";
+import {Button, TextField, Tooltip} from "@mui/material";
 import {SwaColor} from "../../enum/SwaColor.ts";
 import React, {useEffect, useState} from "react";
 import {Project} from "../../types/Project";
 import {selectCurrentProject, updateProject} from "../../features/project/ProjectSlice.ts";
 import {useDispatch, useSelector} from "react-redux";
 import {AppDispatch} from "../../store.ts";
-import {Script} from "../../types/Script";
+import {Script, ScriptVersion} from "../../types/Script";
 import {MenuCardStage} from "../../enum/MenuCardStage.ts";
+import IconButton from "@mui/material/IconButton";
+import InfoOutlinedIcon from "@mui/icons-material/InfoOutlined";
 
 interface ScriptTextFieldProps {
     text: string;
-    versions: { id: string, text: string }[];
+    versions: ScriptVersion[];
     style?: React.CSSProperties;
     currentVersionIndex: number;
     setCurrentVersionIndex: React.Dispatch<React.SetStateAction<number>>;
+    update?: () => void;
 }
 
 
 const ScriptTextField = React.forwardRef<HTMLDivElement, ScriptTextFieldProps>(
-    ({text, versions, style, currentVersionIndex, setCurrentVersionIndex}, ref) => {
+    ({text, versions, style, currentVersionIndex, setCurrentVersionIndex, update,}, ref) => {
         const dispatch = useDispatch<AppDispatch>();
         const project = useSelector(selectCurrentProject);
 
@@ -39,26 +42,10 @@ const ScriptTextField = React.forwardRef<HTMLDivElement, ScriptTextFieldProps>(
 
         useEffect(() => {
             if (versions[currentVersionIndex]) {
-                const newText = versions[currentVersionIndex].text;
+                const newText = versions[currentVersionIndex].screenplay;
                 setCurrentText(newText);
                 setCharCount(newText.length);
                 setWordCount(newText.trim().split(/\s+/).filter(Boolean).length);
-
-                if (!!project && !!project.script) {
-                    const updatedScript: Script = {
-                        ...project.script,
-                        critiqueStage: MenuCardStage.UNINITIALIZED,
-                        analysisStage: MenuCardStage.UNINITIALIZED,
-                        consistencyStage: MenuCardStage.UNINITIALIZED,
-                    };
-
-                    const updatedProject: Project = {
-                        ...project,
-                        script: updatedScript,
-                    };
-
-                    dispatch(updateProject(updatedProject))
-                }
             }
         }, [currentVersionIndex, versions]);
 
@@ -77,16 +64,20 @@ const ScriptTextField = React.forwardRef<HTMLDivElement, ScriptTextFieldProps>(
             const updatedScript: Script = {
                 ...project.script,
                 screenplay: currentText,
-                versions: project.script.versions.map((version) =>
-                    version.id === project?.script?.versions[currentVersionIndex].id
-                        ? { ...version, text: currentText }
+                versions: project.script.versions.map((version) => {
+                    const updateStage = (stage: MenuCardStage) => (textChanged && stage != MenuCardStage.UNINITIALIZED)
+                        ? MenuCardStage.NEEDS_UPDATE : stage;
+                    return version.id === project.script?.versions[currentVersionIndex].id
+                        ? {
+                            ...version,
+                            screenplay: currentText,
+                            critiqueStage: updateStage(version.critiqueStage),
+                            analysisStage: updateStage(version.analysisStage),
+                            consistencyStage: updateStage(version.consistencyStage),
+                            whoWroteWhatStage: updateStage(version.whoWroteWhatStage),
+                        }
                         : version
-                ),
-                critiqueStage: textChanged ? MenuCardStage.NEEDS_UPDATE : project.script.critiqueStage,
-                analysisStage: textChanged ? MenuCardStage.NEEDS_UPDATE : project.script.analysisStage,
-                consistencyStage: textChanged ? MenuCardStage.NEEDS_UPDATE : project.script.consistencyStage,
-                whoWroteWhatStage: textChanged ? MenuCardStage.NEEDS_UPDATE : project.script.whoWroteWhatStage,
-
+                })
             }
 
             const updatedProject: Project = {
@@ -97,20 +88,43 @@ const ScriptTextField = React.forwardRef<HTMLDivElement, ScriptTextFieldProps>(
             dispatch(updateProject(updatedProject))
         }
 
+        const handleVersionChange = (versionIndex: number) => {
+            setCurrentVersionIndex(versionIndex);
+
+            if (project && project?.script) {
+                const updatedProject: Project = {
+                    ...project,
+                    script: {...project?.script, selectedVersion: versionIndex}
+                };
+                dispatch(updateProject(updatedProject))
+            }
+        }
+
         return (
             <Box sx={{
                 overflowY: 'auto',
                 marginRight: 2,
+                height: '100%',
                 // '&::-webkit-scrollbar': {display: 'none'},
                 ...style
             }}>
                 <Box
-                    sx={{display: 'flex', flexDirection: 'row', justifyContent: versions.length > 1 ? "space-between" : "end", alignItems: "center"}}>
-                    {versions && versions.length > 1 &&
-                        <PaginationVersions totalPages={versions.length}
-                                            onChange={(newPageIndex) => setCurrentVersionIndex(newPageIndex - 1)}
-                                            currentVersion={currentVersionIndex + 1}/>
-                    }
+                    sx={{display: 'flex', flexDirection: 'row', justifyContent: (versions.length > 1 || !!project?.script?.needsUpdate) ? "space-between" : "end", alignItems: "center"}}>
+                    <Box sx={{display: 'flex', flexDirection: 'row'}}>
+                        {
+                            project?.script?.needsUpdate && <Tooltip title={"Story beats changed. Update needed"} placement="top" arrow>
+                                <Button onClick={update} size="small" variant="outlined" sx={{mb: 1}}>Update</Button>
+                            </Tooltip>
+                        }
+
+                        {
+                            versions && versions.length > 1 &&
+                            <PaginationVersions totalPages={versions.length}
+                                                onChange={(newPageIndex) => handleVersionChange(newPageIndex - 1)}
+                                                currentVersion={currentVersionIndex + 1}/>
+                        }
+                    </Box>
+
                     <Typography sx={{mt: '4px'}} variant="body2" color="textSecondary" align="right">
                         {`Words: ${wordCount} | Characters: ${charCount}`}
                     </Typography>
@@ -119,7 +133,8 @@ const ScriptTextField = React.forwardRef<HTMLDivElement, ScriptTextFieldProps>(
                 <Box sx={{
                     height: "96%",
                     overflowY: 'auto',
-                    '&::-webkit-scrollbar': { display: 'none' }
+                    '&::-webkit-scrollbar': { display: 'none' },
+                    position: 'relative'
                 }}>
                     <TextField ref={ref}
                            fullWidth
@@ -159,6 +174,15 @@ const ScriptTextField = React.forwardRef<HTMLDivElement, ScriptTextFieldProps>(
                                // color: SwaColor.primaryLighter
                                    color: SwaColor.primary
                            }}}/>
+                    <Box sx={{
+                        position: 'absolute',
+                        top: 5,
+                        right: 5,
+                    }}>
+                        <Tooltip title={"Highlight a sentence to see more options"} placement="left" arrow>
+                            <IconButton sx={{p:0}}><InfoOutlinedIcon sx={{height: 18}} /></IconButton>
+                        </Tooltip>
+                    </Box>
                 </Box>
             </Box>
         )

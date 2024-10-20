@@ -31,6 +31,7 @@ import About from "../../views/About.tsx";
 import Brainstorming from "../../views/Brainstorming.tsx";
 import {AppDispatch} from "../../store.ts";
 import {theme} from "../MuiTheme.ts";
+import InitialPage from "../../views/InitialPage.tsx";
 
 const MiniDrawer: React.FC = () => {
     const projects = useSelector(selectProjects)
@@ -47,20 +48,28 @@ const MiniDrawer: React.FC = () => {
     const [completed] = React.useState<{ [k: number]: boolean }>({});
 
     useEffect(() => {
-        if (project && project.projectStage != ProjectStage.ABOUT) {
+        if (project && (project.projectStage != ProjectStage.ABOUT || project.projectStage != ProjectStage.ABOUT)) {
             if (route === ProjectStage.ABOUT) {
                 setActiveStep(4);
+            } else if (route === ProjectStage.INITIAL) {
+                setActiveStep(5);
             } else {
                 setActiveStep(getIndex(project.projectStage));
             }
         } else {
-            setActiveStep(4);
+            if (route === ProjectStage.ABOUT) {
+                setActiveStep(4);
+            } else if (route === ProjectStage.INITIAL) {
+                setActiveStep(5);
+            }
         }
     }, [project, project?.projectStage, route]);
 
     useEffect(() => {
         if (projects.length === 0) {
-            setOpen(true)
+            // setOpen(true);
+            dispatch(setRoute(ProjectStage.INITIAL));
+
         }
     }, [projects]);
 
@@ -87,7 +96,7 @@ const MiniDrawer: React.FC = () => {
             case ProjectStage.COMPLETION:
                 return 3;
             default:
-                return 0
+                return 0;
         }
     }
 
@@ -148,13 +157,13 @@ const MiniDrawer: React.FC = () => {
                                         style={{marginLeft: 10, marginRight: 10, minWidth: 300}}>
                                 {project ? project.name : tmpTitle}
                             </Typography>
-                            <SwaStepper steps={Object.values(ProjectStage).filter(ps => ps != ProjectStage.ABOUT)}
+                            <SwaStepper steps={Object.values(ProjectStage).filter(ps => ps != ProjectStage.ABOUT && ps != ProjectStage.INITIAL)}
                                         activeStep={activeStep}
                                         setActiveStep={handleStepChange}
                                         completed={completed}/>
                             {project ? <ButtonsHeader/> : <ButtonsHeaderSkeleton/>}
                         </Box>
-                        {project?.projectStage === ProjectStage.BRAINSTORMING
+                        {(project?.projectStage === ProjectStage.BRAINSTORMING && route === ProjectStage.BRAINSTORMING)
                             ? <IconButton color="inherit"
                                           aria-label="open drawer"
                                           onClick={() => setOpenRight(!openRight)}
@@ -194,13 +203,15 @@ const MiniDrawer: React.FC = () => {
                                 return <Export/>
                             case ProjectStage.ABOUT:
                                 return <About/>
+                            case ProjectStage.INITIAL:
+                                return <InitialPage/>
                             default:
-                                return <Brainstorming/>
+                                return <InitialPage/>
                         }
                     })()}
                 </Box>
 
-                {project?.projectStage === ProjectStage.BRAINSTORMING &&
+                {project?.projectStage === ProjectStage.BRAINSTORMING && route === ProjectStage.BRAINSTORMING &&
                     <SDrawer variant="permanent" open={openRight} anchor={"right"}>
                         <div className={blur ? 'blur-background' : ''} style={{height: '100%'}}>
                             {openRight && <RightDrawerItems/>}

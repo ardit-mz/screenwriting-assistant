@@ -11,8 +11,8 @@ import {ProjectStage} from "../../enum/ProjectStage.ts";
 import {AppDispatch} from "../../store.ts";
 import {regenerateStoryBeats} from "../../api/openaiAPI.ts";
 import RewriteAllButton from "./RewriteAllButton.tsx";
-import {selectApiKey} from "../../features/model/ModelSlice.ts";
-import {StoryBeat} from "../../types/StoryBeat";
+import {selectApiKey, selectModel} from "../../features/model/ModelSlice.ts";
+import {StoryBeat, StoryBeatVersion} from "../../types/StoryBeat";
 import {v4 as uuidv4} from "uuid";
 import {Project} from "../../types/Project";
 import {MenuCardStage} from "../../enum/MenuCardStage.ts";
@@ -23,6 +23,7 @@ const ButtonsHeader = () => {
     const dispatch = useDispatch<AppDispatch>();
     const locked = project?.storyBeats ? project?.storyBeats?.some(s => s.locked) : false;
     const apiKey = useSelector(selectApiKey);
+    const model = useSelector(selectModel);
 
     const rewriteTooltipTitle = locked ? 'Rewrite unlocked story beats' : 'Rewrite all story beats';
     const rewriteButtonTitle = locked ? "Rewrite unlocked" : "Rewrite all";
@@ -44,6 +45,7 @@ const ButtonsHeader = () => {
             project.storyBeats,
             lockedStoryBeats,
             apiKey,
+            model,
             project?.uploadedText);
 
         if (newStoryBeatsResponse === 401) {
@@ -57,6 +59,20 @@ const ButtonsHeader = () => {
 
             newStoryBeats?.forEach((act: string, index: number) => {
                 const id = uuidv4()
+
+                const newStoryBeatVersion: StoryBeatVersion = {
+                    id: id,
+                    text: act,
+                    questions: undefined,
+                    emotion: undefined,
+                    analysis: undefined,
+                    critique: undefined,
+                    questionStage: MenuCardStage.UNINITIALIZED,
+                    emotionStage: MenuCardStage.UNINITIALIZED,
+                    analysisStage: MenuCardStage.UNINITIALIZED,
+                    critiqueStage: MenuCardStage.UNINITIALIZED,
+                }
+
                 const newStoryBeat: StoryBeat = {
                     id: id,
                     text: act,
@@ -64,16 +80,9 @@ const ButtonsHeader = () => {
                     index: index,
                     impulses: [],
                     impulseStage: MenuCardStage.UNINITIALIZED,
-                    questions: undefined,
-                    questionStage: MenuCardStage.UNINITIALIZED,
-                    emotion: undefined,
-                    emotionStage: MenuCardStage.UNINITIALIZED,
-                    versions: [{id: id, text: act}],
-                    project: project,
-                    analysis: undefined,
-                    analysisStage: MenuCardStage.UNINITIALIZED,
-                    critique: undefined,
-                    critiqueStage: MenuCardStage.UNINITIALIZED,
+                    versions: [newStoryBeatVersion],
+                    selectedVersionId: 0,
+                    projectId: project.id,
                 }
                 actsList.push(newStoryBeat);
             })

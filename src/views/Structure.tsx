@@ -5,7 +5,7 @@ import {AppDispatch} from "../store.ts";
 import {selectCurrentProject, setLoading, updateProject} from "../features/project/ProjectSlice.ts";
 import {ProjectStage} from "../enum/ProjectStage.ts";
 import {getStoryBeatsFromBrainstorming} from "../api/openaiAPI.ts";
-import {StoryBeat} from "../types/StoryBeat";
+import {StoryBeat, StoryBeatVersion} from "../types/StoryBeat";
 import {v4 as uuidv4} from "uuid";
 import SwaStep from "../components/stepper/SwaStep.tsx";
 import {Project} from "../types/Project";
@@ -14,7 +14,7 @@ import {closestCenter, DndContext, DragEndEvent, PointerSensor, useSensor, useSe
 import {SortableContext, arrayMove, horizontalListSortingStrategy} from "@dnd-kit/sortable";
 import {SwaColor} from "../enum/SwaColor.ts";
 import {selectDndOptionShown, setDndOptionShown} from "../features/snackbar/SnackbarSlice.ts";
-import {selectApiKey} from "../features/model/ModelSlice.ts";
+import {selectApiKey, selectModel} from "../features/model/ModelSlice.ts";
 import {MenuCardStage} from "../enum/MenuCardStage.ts";
 import {selectDialogError, showDialogError} from "../features/drawer/DrawerSlice.ts";
 import {debounce} from "../helper/DebounceHelper.ts";
@@ -25,6 +25,7 @@ const Structure = () => {
     const project = useSelector(selectCurrentProject)
     const dndOptionShown = useSelector(selectDndOptionShown);
     const apiKey = useSelector(selectApiKey);
+    const model = useSelector(selectModel);
     // const scrollContainerRef = useRef(null);
     const dialogError = useSelector(selectDialogError)
 
@@ -105,7 +106,7 @@ const Structure = () => {
     const updateStoryBeats = async () => {
         if (!project) return;
 
-        const res = await getStoryBeatsFromBrainstorming(project.brainstorm, apiKey, project?.uploadedText);
+        const res = await getStoryBeatsFromBrainstorming(project.brainstorm, apiKey, model, project?.uploadedText);
         if (res === 401) { dispatch(showDialogError(true)) }
 
         if (res) {
@@ -117,6 +118,20 @@ const Structure = () => {
 
             acts?.forEach((act: string, index: number) => {
                 const id = uuidv4()
+
+                const newStoryBeatVersion: StoryBeatVersion = {
+                    id: id,
+                    text: act,
+                    questions: undefined,
+                    emotion: undefined,
+                    analysis: undefined,
+                    critique: undefined,
+                    questionStage: MenuCardStage.UNINITIALIZED,
+                    emotionStage: MenuCardStage.UNINITIALIZED,
+                    analysisStage: MenuCardStage.UNINITIALIZED,
+                    critiqueStage: MenuCardStage.UNINITIALIZED,
+                }
+
                 const newStoryBeat: StoryBeat = {
                     id: id,
                     text: act,
@@ -124,16 +139,17 @@ const Structure = () => {
                     index: index,
                     impulses: [],
                     impulseStage: MenuCardStage.UNINITIALIZED,
-                    questions: undefined,
-                    questionStage: MenuCardStage.UNINITIALIZED,
-                    emotion: undefined,
-                    emotionStage: MenuCardStage.UNINITIALIZED,
-                    versions: [{id: id, text: act}],
-                    project: project,
-                    analysis: undefined,
-                    analysisStage: MenuCardStage.UNINITIALIZED,
-                    critique: undefined,
-                    critiqueStage: MenuCardStage.UNINITIALIZED,
+                    // questions: undefined,
+                    // questionStage: MenuCardStage.UNINITIALIZED,
+                    // emotion: undefined,
+                    // emotionStage: MenuCardStage.UNINITIALIZED,
+                    versions: [newStoryBeatVersion],
+                    selectedVersionId: 0,
+                    projectId: project.id,
+                    // analysis: undefined,
+                    // analysisStage: MenuCardStage.UNINITIALIZED,
+                    // critique: undefined,
+                    // critiqueStage: MenuCardStage.UNINITIALIZED,
                 }
                 actsList.push(newStoryBeat);
             })
