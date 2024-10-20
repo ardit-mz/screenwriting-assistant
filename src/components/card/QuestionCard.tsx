@@ -141,8 +141,11 @@ const QuestionCard: React.FC<QuestionCardProps> = ({questions, onClick}) => {
                         )}
                     </Collapse>
                 </>
-                :
-                <Typography align={"left"} fontWeight={"bold"} component='div' sx={{mt: 2}}>This story beat does not answer raised questions questions for this story beat</Typography>
+                : <Card sx={{backgroundColor: '', mt: 2, p:1, border: 'solid ' + SwaColor.orangeLight, boxShadow: 'none'}}>
+                    <Typography align={"left"} color={SwaColor.primaryLight} component='div'>
+                        This story beat does not raise questions answered in other story beats
+                    </Typography>
+                </Card>
             }
 
             {questions.questions_answered && questions.questions_answered.length > 0
@@ -162,8 +165,11 @@ const QuestionCard: React.FC<QuestionCardProps> = ({questions, onClick}) => {
                         )}
                     </Collapse>
                 </>
-                :
-                <Typography align={"left"} fontWeight={"bold"} component='div' sx={{mt: 2}}>This story beat does not answer raised questions questions for this story beat</Typography>
+                : <Card sx={{backgroundColor: '', mt: 2, p:1, border: 'solid ' + SwaColor.orangeLight, boxShadow: 'none'}}>
+                    <Typography align={"left"} color={SwaColor.primaryLight} component='div'>
+                        This story beat does not answer questions raised in other story beats
+                    </Typography>
+                </Card>
             }
 
             {questions.questions_unanswered && questions.questions_unanswered.length > 0
@@ -177,8 +183,10 @@ const QuestionCard: React.FC<QuestionCardProps> = ({questions, onClick}) => {
                         )}
                     </Collapse>
                 </>
-                : <Card sx={{backgroundColor: 'white', mt: 2, p:1, border: 'solid ' + SwaColor.orangeLight, boxShadow: 'none'}}>
-                    <Typography align={"left"} color={SwaColor.primaryLight} component='div'>There are no unanswered questions raised by this story beat</Typography>
+                : <Card sx={{backgroundColor: '', mt: 2, p:1, border: 'solid ' + SwaColor.orangeLight, boxShadow: 'none'}}>
+                    <Typography align={"left"} color={SwaColor.primaryLight} component='div'>
+                        There are no unanswered questions raised by this story beat
+                    </Typography>
                 </Card>
             }
         </Box>

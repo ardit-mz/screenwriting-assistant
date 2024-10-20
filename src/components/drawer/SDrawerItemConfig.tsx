@@ -3,13 +3,14 @@ import ListItem from '@mui/material/ListItem';
 import ListItemButton from '@mui/material/ListItemButton';
 import ListItemIcon from '@mui/material/ListItemIcon';
 import {useDispatch, useSelector} from "react-redux";
-import {AppDispatch } from "../../store.ts";
+import {AppDispatch} from "../../store.ts";
 import ListItemText from "@mui/material/ListItemText";
 import {handleBlurBackground} from "../../features/theme/ThemeSlice.ts";
 import ConfigurationDialog from "../dialog/ConfigurationDialog.tsx";
 import SettingsIcon from '@mui/icons-material/Settings';
 import {setModel} from "../../features/model/ModelSlice.ts";
-import {selectDialogError} from "../../features/drawer/DrawerSlice.ts";
+import {selectDialogError, selectShowConfig, setShowConfig} from "../../features/drawer/DrawerSlice.ts";
+import {Model} from "../../enum/Models.ts";
 
 interface DrawerItemProps {
     open: boolean;
@@ -18,6 +19,7 @@ interface DrawerItemProps {
 const DrawerItem: React.FC<DrawerItemProps> = ({ open }) => {
     const dispatch = useDispatch<AppDispatch>();
     const showDialogError = useSelector(selectDialogError);
+    const showConfig = useSelector(selectShowConfig);
     const [dialogOpen, setDialogOpen] = useState(false);
 
     useEffect(() => {
@@ -27,6 +29,12 @@ const DrawerItem: React.FC<DrawerItemProps> = ({ open }) => {
         }
     }, [showDialogError]);
 
+    useEffect(() => {
+        if (showConfig) {
+            handleConfig();
+        }
+    }, [showConfig]);
+
     const handleConfig = () => {
         setDialogOpen(true);
         dispatch(handleBlurBackground(true))
@@ -34,16 +42,18 @@ const DrawerItem: React.FC<DrawerItemProps> = ({ open }) => {
 
     const handleClose = () => {
         setDialogOpen(false);
-        dispatch(handleBlurBackground(false))
+        dispatch(handleBlurBackground(false));
+        if (showConfig) dispatch(setShowConfig(false));
     };
 
     const handleSave = (modelName: string, apiKey: string) => {
         dispatch(setModel({
-            modelName: modelName,
+            modelName: (modelName === Model.GPT_4o) ? Model.GPT_4o : Model.GPT_4o_mini,
             apiKey: apiKey
         }))
 
         setDialogOpen(false);
+        if (showConfig) dispatch(setShowConfig(false));
     };
 
     return (

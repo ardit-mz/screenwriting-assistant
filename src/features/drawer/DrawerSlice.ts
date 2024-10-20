@@ -6,6 +6,8 @@ interface DrawerState {
     openRight: boolean;
     suggestionsFetched: boolean;
     dialogError: boolean;
+    showConfig: boolean;
+    showAdd: boolean;
 }
 
 const initialState: DrawerState = {
@@ -13,6 +15,8 @@ const initialState: DrawerState = {
     openRight: false,
     suggestionsFetched: false,
     dialogError: false,
+    showConfig: false,
+    showAdd: false,
 }
 
 const DrawerSlice = createSlice({
@@ -30,6 +34,12 @@ const DrawerSlice = createSlice({
         },
         showDialogError(state, action: PayloadAction<boolean>) {
             state.dialogError = action.payload;
+        },
+        setShowConfig(state, action: PayloadAction<boolean>) {
+            state.showConfig = action.payload;
+        },
+        setShowAdd(state, action: PayloadAction<boolean>) {
+            state.showAdd = action.payload;
         }
     }
 })
@@ -38,12 +48,16 @@ export const selectOpenLeft = (state: RootState) => state.drawer.openLeft;
 export const selectOpenRight = (state: RootState) => state.drawer.openRight;
 export const selectSuggestionsFetched = (state: RootState) => state.drawer.suggestionsFetched;
 export const selectDialogError = (state: RootState) => state.drawer.dialogError;
+export const selectShowConfig = (state: RootState) => state.drawer.showConfig;
+export const selectShowAdd = (state: RootState) => state.drawer.showAdd;
 
 export const {
     setOpenLeft,
     setOpenRight,
     setSuggestionsFetched,
     showDialogError,
+    setShowConfig,
+    setShowAdd,
 } = DrawerSlice.actions;
 
 export default DrawerSlice.reducer;

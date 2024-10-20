@@ -23,7 +23,7 @@ const SwaStepSkeleton: React.FC<SwaStepSkeletonProps> = ({showIcon}) => {
                         flexDirection: 'row',
                         alignItems: 'center',
                     }}>
-                        <Skeleton variant="rounded" width={30} height={30} style={{marginRight: 10}}/>
+                        <Skeleton variant={"circular"}  width={24} height={24} style={{marginRight: 10}} />
                         <Skeleton variant={"circular"}  width={24} height={24} style={{marginRight: 10}} />
                         <Skeleton variant={"circular"}  width={24} height={24} style={{marginRight: 10}} />
                         <Skeleton variant={"circular"}  width={24} height={24} style={{marginRight: 10}} />

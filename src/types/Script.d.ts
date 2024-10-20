@@ -4,10 +4,10 @@ import {Consistency} from "./Consistency";
 import {ScriptChangesAuthors} from "./ScriptChanges";
 import {MenuCardStage} from "../enum/MenuCardStage.ts";
 
-export type Script = {
+export type ScriptVersion = {
+    id: string;
     screenplay: string;
     treatment: string | undefined;
-    versions: { id: string; text: string}[];
     critique: Critique | undefined;
     analysis: Analysis | undefined;
     consistency: Consistency[] | undefined;
@@ -16,4 +16,12 @@ export type Script = {
     analysisStage: MenuCardStage;
     consistencyStage: MenuCardStage;
     whoWroteWhatStage: MenuCardStage;
+}
+
+export type Script = {
+    screenplay: string;
+    treatment: string | undefined;
+    versions: ScriptVersion[];
+    selectedVersion: number;
+    needsUpdate?: boolean;
 }

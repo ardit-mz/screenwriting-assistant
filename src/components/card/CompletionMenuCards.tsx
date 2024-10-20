@@ -14,6 +14,7 @@ import {MenuCardStage} from "../../enum/MenuCardStage.ts";
 interface CompletionMenuCardsProps {
     project: Project | null;
     script: Script;
+    currentVersionIndex: number;
     selectedMenuItem: MenuItem | null,
     menuWidth: string | number,
     rephrasedSentence: string,
@@ -26,6 +27,7 @@ interface CompletionMenuCardsProps {
 const CompletionMenuCards: React.FC<CompletionMenuCardsProps> = ({
                                                                      project,
                                                                      script,
+                                                                     currentVersionIndex,
                                                                      selectedMenuItem,
                                                                      menuWidth,
                                                                      rephrasedSentence,
@@ -40,31 +42,34 @@ const CompletionMenuCards: React.FC<CompletionMenuCardsProps> = ({
         (stage === MenuCardStage.SHOWN || stage === MenuCardStage.NEEDS_UPDATE) && data;
 
     const renderCritiqueCard = () => {
-        if (isLoading(script.critiqueStage)) {
+        const selectedVersion = script.versions[currentVersionIndex];
+        if (isLoading(selectedVersion.critiqueStage)) {
             return <QuestionSkeleton width={menuWidth}/>;
-        } else if (isReadyToShow(script.critiqueStage, !!script.critique) && !!script?.critique) {
-            return <CritiqueCard strengths={script.critique.strength}
-                                 improvement={script.critique.improvementArea}
-                                 summary={script.critique.improvementSummary}/>;
+        } else if (isReadyToShow(selectedVersion.critiqueStage, !!selectedVersion.critique) && !!selectedVersion?.critique) {
+            return <CritiqueCard strengths={selectedVersion.critique.strength}
+                                 improvement={selectedVersion.critique.improvementArea}
+                                 summary={selectedVersion.critique.improvementSummary}/>;
         }
     };
 
     const renderAnalysisCard = () => {
-        if (isLoading(script.analysisStage)) {
+        const selectedVersion = script.versions[currentVersionIndex];
+        if (isLoading(selectedVersion.analysisStage)) {
             return <QuestionSkeleton width={menuWidth}/>;
-        } else if (isReadyToShow(script.analysisStage, !!script.analysis) && !!script.analysis) {
-            return <AnalysisCard incident={script.analysis.incitingIncident}
-                                 characters={script.analysis.characterDevelopment}
-                                 themes={script.analysis.thematicImplications}
-                                 foreshadowing={script.analysis.narrativeForeshadowing}/>;
+        } else if (isReadyToShow(selectedVersion.analysisStage, !!selectedVersion.analysis) && !!selectedVersion.analysis) {
+            return <AnalysisCard incident={selectedVersion.analysis.incitingIncident}
+                                 characters={selectedVersion.analysis.characterDevelopment}
+                                 themes={selectedVersion.analysis.thematicImplications}
+                                 foreshadowing={selectedVersion.analysis.narrativeForeshadowing}/>;
         }
     };
 
     const renderConsistencyCard = () => {
-        if (isLoading(script.consistencyStage)) {
+        const selectedVersion = script.versions[currentVersionIndex];
+        if (isLoading(selectedVersion?.consistencyStage)) {
             return <QuestionSkeleton width={menuWidth}/>;
-        } else if (isReadyToShow(script.consistencyStage, !!script.consistency && script.consistency.length > 0) && !!script.consistency) {
-            return (script.consistency.map((c, index) =>
+        } else if (isReadyToShow(selectedVersion?.consistencyStage, !!selectedVersion?.consistency && selectedVersion.consistency.length > 0) && !!selectedVersion.consistency) {
+            return (selectedVersion.consistency.map((c, index) =>
                 <ConsistencyAccordion key={index}
                                       index={index}
                                       text={c.text}

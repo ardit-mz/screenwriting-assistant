@@ -33,7 +33,7 @@ const ConsistencyAccordion: React.FC<ConsistencyAccordionProps> = ({
             <Accordion key={index}
                        sx={{backgroundColor: 'white', border: 'solid ' + SwaColor.yellowLight, boxShadow: 'none'}}>
                 <AccordionSummary expandIcon={<ExpandMoreIcon/>}>
-                    <Typography align={"left"}>"{text}"</Typography>
+                    <Typography align={"left"}>"{text.replace('\\n', '')}"</Typography>
                 </AccordionSummary>
 
                 <AccordionDetails>

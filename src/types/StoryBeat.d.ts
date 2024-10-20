@@ -1,26 +1,31 @@
-import {Project} from "./Project";
 import {Questions} from "./Question";
 import {Emotion} from "./Emotion";
 import {Critique} from "./Critique";
 import {Analysis} from "./Analysis";
 import {MenuCardStage} from "../enum/MenuCardStage.ts";
 
+export type StoryBeatVersion = {
+    id: string;
+    text: string;
+    questions: Questions | undefined;
+    emotion: Emotion | undefined;
+    critique: Critique | undefined;
+    analysis: Analysis | undefined;
+    questionStage: MenuCardStage;
+    emotionStage: MenuCardStage;
+    critiqueStage: MenuCardStage;
+    analysisStage: MenuCardStage;
+}
+
 export type StoryBeat = {
     id: string;
     text: string;
     locked: boolean;
     index: number;
-    versions: { id: string; text: string}[];
+    versions: StoryBeatVersion[];
+    selectedVersionId: number;
     impulses: string[];
     impulseStage: MenuCardStage;
-    questions: Questions | undefined;
-    questionStage: MenuCardStage;
-    emotion: Emotion | undefined;
-    emotionStage: MenuCardStage;
-    critique: Critique | undefined;
-    critiqueStage: MenuCardStage;
-    analysis: Analysis | undefined;
-    analysisStage: MenuCardStage;
-    project?: Project;
+    projectId?: string;
     textUpdated?: boolean;
 }
