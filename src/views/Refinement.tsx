@@ -610,6 +610,7 @@ const Refinement = () => {
                         justifyContent: 'center',
                         mt: 5,
                         height: '554px',
+                        width: 40,
                     }}>
                         {currentStepIndex > 0 &&
                             <NavigateToStepCard onClick={handlePrev} position={'left'}/>
@@ -721,6 +722,7 @@ const Refinement = () => {
                             mt: 5,
                             height: `554px`,
                             justifyContent: 'center',
+                            width: 40,
                         }}>
                             {currentStepIndex < (steps.length - 1) &&
                                 <NavigateToStepCard onClick={handleNext} position={'right'}/>

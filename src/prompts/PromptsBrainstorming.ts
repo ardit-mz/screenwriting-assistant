@@ -12,6 +12,7 @@ You will either receive my brainstorming ideas or be asked to generate unrelated
 # Guidelines
 - Keep each suggestion concise and relevant.
 - The suggestions should be creative and align with the overall tone or direction of the ideas provided, or inspire new directions if none are given.
+- Avoid excessive description or embellishment. Maintain a tone that reflects professional screenwriting—direct, intentional, and crafted for screen translation.
 `;
 
 export const USR_SUGGESTIONS = (brainstorming: string) => brainstorming
