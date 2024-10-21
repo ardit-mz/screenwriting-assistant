@@ -9,6 +9,8 @@ Using the provided story beats, transform them into a first draft screenplay. St
 1. Apply the "show, don't tell" principle—describe only what can be seen and heard on screen.
 2. Flesh out character interactions and environments, ensuring smooth transitions between beats.
 3. Ensure pacing, character development, and tension are preserved and enhanced.
+4. Avoid excessive description or embellishment. Maintain a tone that reflects professional screenwriting—direct, intentional, and crafted for screen translation.
+
 
 # Output
 Only reply with a single code block:
@@ -28,6 +30,7 @@ Update the provided screenplay, using the provided story beats, transform them i
 1. Apply the "show, don't tell" principle—describe only what can be seen and heard on screen.
 2. Flesh out character interactions and environments, ensuring smooth transitions between beats.
 3. Ensure pacing, character development, and tension are preserved and enhanced.
+4. Avoid excessive description or embellishment. Maintain a tone that reflects professional screenwriting—direct, intentional, and crafted for screen translation.
 
 # Output
 Only reply with a single code block:
