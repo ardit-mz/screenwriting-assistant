@@ -689,6 +689,7 @@ const Refinement = () => {
                                             onQuestion={handleQuestion}
                                             onCritique={handleCritique}
                                             onAnalysis={handleAnalysis}
+                                            onStoryboard={() => setSelectedMenuItem(MenuItem.STORYBOARD)}
                                             menuWidth={menuWidth}
                             />
                             <Box sx={{

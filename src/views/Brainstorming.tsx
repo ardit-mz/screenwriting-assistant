@@ -14,7 +14,7 @@ import {Project} from "../types/Project";
 import {ProjectStage} from "../enum/ProjectStage.ts";
 import {selectApiKey, selectModel} from "../features/model/ModelSlice.ts";
 import FillingButton from "../components/button/FillingButton.tsx";
-import {setOpenRight, showDialogError} from "../features/drawer/DrawerSlice.ts";
+import {setOpenRight, setShowConfig, showDialogError} from "../features/drawer/DrawerSlice.ts";
 import {getSuggestions} from "../api/openaiAPI.ts";
 import {debounce} from "../helper/DebounceHelper.ts";
 
@@ -44,6 +44,14 @@ const Brainstorming = () => {
             setBrainstormingText(project.brainstorm);
         }
     }, [project?.brainstorm]);
+
+    useEffect(() => {
+        if (!apiKey || apiKey === '') {
+            dispatch(setShowConfig(true));
+        } else {
+            dispatch(setShowConfig(false));
+        }
+    }, [apiKey]);
 
     const brainstormingSuggestions = async () => {
         if (!project) return;
@@ -110,6 +118,11 @@ const Brainstorming = () => {
 
     const handleNext = async () => {
         if (!project) return;
+
+        if (!apiKey || apiKey === '') {
+            dispatch(setShowConfig(true));
+            return;
+        }
 
         const hasBrainstormingChanged = oldBrainstormingText.replace(/\s+/g, '') !== brainstormingText.replace(/\s+/g, '');
 

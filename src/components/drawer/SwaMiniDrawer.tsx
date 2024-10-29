@@ -1,4 +1,4 @@
-import React, {useEffect} from 'react';
+import React, {useEffect, useState} from 'react';
 import CssBaseline from '@mui/material/CssBaseline';
 import Box from '@mui/material/Box';
 import Toolbar from '@mui/material/Toolbar';
@@ -21,8 +21,10 @@ import {
     updateProjectStage
 } from "../../features/project/ProjectSlice.ts";
 import {ProjectStage} from "../../enum/ProjectStage.ts";
-import {ThemeProvider} from "@mui/material";
-import {selectBlur} from "../../features/theme/ThemeSlice.ts";
+import {
+    // Fab,
+    ThemeProvider} from "@mui/material";
+import {handleBlurBackground, selectBlur} from "../../features/theme/ThemeSlice.ts";
 import RightDrawerItems from "./RightDrawerItems.tsx";
 import ButtonsHeader from "../button/ButtonsHeader.tsx";
 import ButtonsHeaderSkeleton from "../skeleton/ButtonsHeaderSkeleton.tsx";
@@ -32,6 +34,7 @@ import Brainstorming from "../../views/Brainstorming.tsx";
 import {AppDispatch} from "../../store.ts";
 import {theme} from "../MuiTheme.ts";
 import InitialPage from "../../views/InitialPage.tsx";
+import FeedbackDialog from "../dialog/FeedbackDialog.tsx";
 
 const MiniDrawer: React.FC = () => {
     const projects = useSelector(selectProjects)
@@ -46,9 +49,10 @@ const MiniDrawer: React.FC = () => {
     const [openRight, setOpenRight] = React.useState(false);
     const [activeStep, setActiveStep] = React.useState(0);
     const [completed] = React.useState<{ [k: number]: boolean }>({});
+    const [showFeedback, setShowFeedback] = useState<boolean>(false);
 
     useEffect(() => {
-        if (project && (project.projectStage != ProjectStage.ABOUT || project.projectStage != ProjectStage.ABOUT)) {
+        if (!!project && (project.projectStage != ProjectStage.ABOUT || project.projectStage != ProjectStage.ABOUT)) {
             if (route === ProjectStage.ABOUT) {
                 setActiveStep(4);
             } else if (route === ProjectStage.INITIAL) {
@@ -101,7 +105,7 @@ const MiniDrawer: React.FC = () => {
     }
 
     const handleStepChange = (step: number) => {
-        if (projects.length === 0 && step != 0) return
+        if (projects.length === 0) return;
         setActiveStep(step);
         switch (step) {
             case 0:
@@ -125,6 +129,16 @@ const MiniDrawer: React.FC = () => {
                 dispatch(setRoute(ProjectStage.BRAINSTORMING));
         }
     };
+
+    // const handleOpenFeedback = () => {
+    //     setShowFeedback(true);
+    //     dispatch(handleBlurBackground(true));
+    // }
+
+    const handleCloseFeedback = () => {
+        setShowFeedback(false);
+        dispatch(handleBlurBackground(false));
+    }
 
     return (
         <ThemeProvider theme={theme}>
@@ -218,6 +232,24 @@ const MiniDrawer: React.FC = () => {
                         </div>
                     </SDrawer>
                 }
+
+                {/*<Fab onClick={handleOpenFeedback}*/}
+                {/*     variant="extended"*/}
+                {/*     size="small"*/}
+                {/*     color="primary"*/}
+                {/*     className={blur ? 'blur-background' : ''}*/}
+                {/*     sx={{*/}
+                {/*         position: 'absolute',*/}
+                {/*         right: -30,*/}
+                {/*         bottom: '10vh',*/}
+                {/*         transform:'rotate(270deg)',*/}
+                {/*         borderRadius: '8px',*/}
+                {/*         height: '22px',*/}
+                {/*         fontSize: 11,*/}
+                {/*     }}*/}
+                {/*>Feedback</Fab>*/}
+
+                <FeedbackDialog open={showFeedback} onClose={handleCloseFeedback} />
             </Box>
         </ThemeProvider>
     );

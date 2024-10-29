@@ -7,10 +7,14 @@ import CritiqueCard from "./CritiqueCard.tsx";
 import AnalysisCard from "./AnalysisCard.tsx";
 import FloatingMenuAddCard from "./FloatingMenuAddCard.tsx";
 import FloatingMenuCard from "./FloatingMenuCard.tsx";
-import React from "react";
+import React, {useState} from "react";
 import {StoryBeatVersion} from "../../types/StoryBeat";
 import {MenuCardStage} from "../../enum/MenuCardStage.ts";
 import Box from "@mui/material/Box";
+import {ButtonBase, Card, Collapse, Grid} from "@mui/material";
+import Typography from "@mui/material/Typography";
+import {ExpandLess, ExpandMore} from "@mui/icons-material";
+import {SwaColor} from "../../enum/SwaColor.ts";
 
 interface RefinementMenuCardsProps {
     selectedVersion: StoryBeatVersion;
@@ -82,6 +86,38 @@ const RefinementMenuCards: React.FC<RefinementMenuCardsProps> = ({
         }
     };
 
+    const [expanded, setExpanded] = useState(true);
+    const renderStoryBoardCard = () => {
+        return (<Box sx={{mt: 2, marginLeft: 4}}>
+            <ButtonBase onClick={() => setExpanded(!expanded)}
+                        sx={{ pr:1, display: 'flex', flexDirection: 'row', justifyContent: 'space-between', width: '100%', alignItems: 'flex-end' }}>
+                <Typography align={"left"} fontWeight={"bold"} component='div' sx={{mt:2}}>Story Board</Typography>
+                {expanded ? <ExpandLess/> : <ExpandMore/>}
+            </ButtonBase>
+
+            <Collapse in={expanded} timeout="auto" unmountOnExit>
+                <Grid container spacing={2}>
+                    {[1, 2, 3, 4].map((index) => (
+                        <Grid item xs={6} key={index}>
+                            <Card
+                                sx={{
+                                    border: 'solid ' + SwaColor.grayBorder,
+                                    boxShadow: 'none',
+                                    aspectRatio: '1',
+                                    display: 'flex',
+                                    justifyContent: 'center',
+                                    alignItems: 'center',
+                                }}
+                            >
+                                Coming Soon
+                            </Card>
+                        </Grid>
+                    ))}
+                </Grid>
+            </Collapse>
+        </Box>)
+    }
+
     const renderCard = () => {
         switch (selectedMenuItem) {
             case MenuItem.EMOTION:
@@ -92,6 +128,8 @@ const RefinementMenuCards: React.FC<RefinementMenuCardsProps> = ({
                 return renderCritiqueCard();
             case MenuItem.ANALYSE:
                 return renderAnalysisCard();
+            case MenuItem.STORYBOARD:
+                return renderStoryBoardCard();
             case MenuItem.REPHRASE:
                 return <FloatingMenuAddCard text={rephrasedSentence}
                                             onClick={() => onAddSentence(false)}
