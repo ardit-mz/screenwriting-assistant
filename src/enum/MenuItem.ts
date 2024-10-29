@@ -11,4 +11,5 @@ export enum MenuItem {
     REPHRASE = 'Rephrase',
     EXPAND = 'Expand',
     CRITIQUE_SENTENCE = 'Critique Sentence',
+    STORYBOARD = 'Storyboard',
 }

@@ -7,6 +7,7 @@ import {SwaColor} from "../../enum/SwaColor.ts";
 import QuestionMarkOutlinedIcon from "@mui/icons-material/QuestionMarkOutlined";
 import PriorityHighOutlinedIcon from "@mui/icons-material/PriorityHighOutlined";
 import AutoGraphOutlinedIcon from "@mui/icons-material/AutoGraphOutlined";
+// import PhotoOutlinedIcon from '@mui/icons-material/PhotoOutlined';
 import {MenuItem} from "../../enum/MenuItem.ts";
 import {StoryBeatVersion} from "../../types/StoryBeat";
 import {MenuCardStage} from "../../enum/MenuCardStage.ts";
@@ -21,6 +22,7 @@ interface RefinementMenuProps {
     onQuestion: () => void;
     onCritique: () => void;
     onAnalysis: () => void;
+    onStoryboard: () => void;
     menuWidth: string | number;
 }
 
@@ -34,8 +36,10 @@ const RefinementMenu: React.FC<RefinementMenuProps> = ({
                                                            onQuestion,
                                                            onCritique,
                                                            onAnalysis,
+                                                           onStoryboard,
                                                            menuWidth,
                                                        }) => {
+    console.log(onStoryboard)
     const showDescription = (typeof menuWidth === 'number') ? (menuWidth > 350) : (parseFloat(menuWidth) > 450);
 
     const getDescription = (menuItem: MenuItem, stage: MenuCardStage, defaultText: string) => {
@@ -85,6 +89,10 @@ const RefinementMenu: React.FC<RefinementMenuProps> = ({
                              description={getDescription(MenuItem.ANALYSE, selectedVersion?.analysisStage, 'Analyse this story beat')}
                              backgroundColor={SwaColor.violetLight}
                              active={!!selectedMenuItem && selectedMenuItem === MenuItem.ANALYSE}/>
+
+            {/*<ContextMenuItem icon={<PhotoOutlinedIcon/>}*/}
+            {/*                 name="Storyboard"*/}
+            {/*                 onClick={onStoryboard}/>*/}
         </ContextMenu>
     )
 }
